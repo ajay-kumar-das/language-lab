@@ -1,0 +1,10 @@
+<svg width="200" height="60" viewBox="0 0 200 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <path d="M12 8h30c6.627 0 12 5.373 12 12v12c0 6.627-5.373 12-12 12H24l-8 8v-8h-4c-6.627 0-12-5.373-12-12V20c0-6.627 5.373-12 12-12z" fill="#2563EB"/>
+  <rect x="18" y="18" width="20" height="2" rx="1" fill="white"/>
+  <rect x="18" y="24" width="16" height="2" rx="1" fill="white"/>
+  <rect x="18" y="30" width="24" height="2" rx="1" fill="white"/>
+  <path d="M36 26l8-8v4h8v8h-8v4l-8-8z" fill="#F59E0B"/>
+  <text x="64" y="22" font-family="Inter, sans-serif" font-size="18" font-weight="700" fill="#111827">Lingua</text>
+  <text x="64" y="40" font-family="Inter, sans-serif" font-size="18" font-weight="700" fill="#2563EB">Leap</text>
+</svg>
+EOF < /dev/null

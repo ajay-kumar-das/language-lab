@@ -1,0 +1,334 @@
+import React, { useState } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
+import { Button } from './ui/button';
+import { Badge } from './ui/badge';
+import { Progress } from './ui/progress';
+import { Plus, BookOpen, MessageSquare, Lock, CheckCircle, DollarSign, Gift, Play } from 'lucide-react';
+import { CreateCourseDialog } from './CreateCourseDialog';
+import { Link } from 'react-router-dom';
+import { useUser } from './UserContext';
+import { toast } from 'sonner@2.0.3';
+
+interface CourseTask {
+  id: string;
+  title: string;
+  type: 'vocabulary' | 'conversation';
+  isCompleted: boolean;
+  isLocked: boolean;
+  isCurrent: boolean;
+}
+
+interface Course {
+  id: string;
+  title: string;
+  language: string;
+  reason: string;
+  description: string;
+  tasks: CourseTask[];
+  completedTasks: number;
+  totalTasks: number;
+  price: number;
+  tier: 'basic' | 'premium' | 'pro';
+  isPurchased: boolean;
+  isCompleted: boolean;
+  completionReward: number;
+}
+
+const mockCourses: Course[] = [
+  {
+    id: '1',
+    title: 'Spanish for Travel',
+    language: 'Spanish',
+    reason: 'Travel & Tourism',
+    description: 'Learn essential Spanish phrases and vocabulary for traveling in Spanish-speaking countries.',
+    completedTasks: 3,
+    totalTasks: 12,
+    price: 49.99,
+    tier: 'premium',
+    isPurchased: true,
+    isCompleted: false,
+    completionReward: 9.99,
+    tasks: [
+      { id: '1', title: 'Basic Greetings', type: 'vocabulary', isCompleted: true, isLocked: false, isCurrent: false },
+      { id: '2', title: 'Asking for Directions', type: 'conversation', isCompleted: true, isLocked: false, isCurrent: false },
+      { id: '3', title: 'Hotel Check-in', type: 'vocabulary', isCompleted: true, isLocked: false, isCurrent: false },
+      { id: '4', title: 'Ordering Food', type: 'conversation', isCompleted: false, isLocked: false, isCurrent: true },
+      { id: '5', title: 'Shopping Phrases', type: 'vocabulary', isCompleted: false, isLocked: true, isCurrent: false },
+    ]
+  }
+];
+
+export function Courses() {
+  const [courses, setCourses] = useState<Course[]>(mockCourses);
+  const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
+  const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const { user, processPayment, addEarnings, updateUser } = useUser();
+
+  const handleCreateCourse = async (courseData: { language: string; reason: string; tier: 'basic' | 'premium' | 'pro' }) => {
+    const pricing = {
+      basic: 29.99,
+      premium: 49.99,
+      pro: 79.99
+    };
+
+    const price = pricing[courseData.tier];
+    
+    try {
+      const paymentSuccess = await processPayment(price, `${courseData.language} for ${courseData.reason} - ${courseData.tier} tier`);
+      
+      if (!paymentSuccess) {
+        toast.error('Payment failed. Please try again.');
+        return;
+      }
+
+      const newCourse: Course = {
+        id: Date.now().toString(),
+        title: `${courseData.language} for ${courseData.reason}`,
+        language: courseData.language,
+        reason: courseData.reason,
+        description: `Learn ${courseData.language} specifically for ${courseData.reason.toLowerCase()}.`,
+        completedTasks: 0,
+        totalTasks: courseData.tier === 'basic' ? 8 : courseData.tier === 'premium' ? 12 : 16,
+        price,
+        tier: courseData.tier,
+        isPurchased: true,
+        isCompleted: false,
+        completionReward: price * 0.2,
+        tasks: Array.from({ length: courseData.tier === 'basic' ? 8 : courseData.tier === 'premium' ? 12 : 16 }, (_, i) => ({
+          id: (i + 1).toString(),
+          title: `Lesson ${i + 1}`,
+          type: i % 2 === 0 ? 'vocabulary' : 'conversation',
+          isCompleted: false,
+          isLocked: i > 0,
+          isCurrent: i === 0
+        }))
+      };
+      
+      setCourses(prev => [...prev, newCourse]);
+      setShowCreateDialog(false);
+      toast.success(`Course purchased successfully! Start your learning journey.`);
+    } catch (error) {
+      toast.error('Payment processing failed. Please try again.');
+    }
+  };
+
+  // This function would be called when a user actually completes a learning activity
+  const completeTask = (courseId: string, taskId: string) => {
+    setCourses(prev => prev.map(course => {
+      if (course.id === courseId) {
+        const updatedTasks = course.tasks.map(task => {
+          if (task.id === taskId) {
+            return { ...task, isCompleted: true, isCurrent: false };
+          }
+          return task;
+        });
+
+        const completedCount = updatedTasks.filter(t => t.isCompleted).length;
+        const isFullyCompleted = completedCount === course.totalTasks;
+
+        // Update next task to current
+        if (!isFullyCompleted) {
+          const nextTask = updatedTasks.find(t => !t.isCompleted);
+          if (nextTask) {
+            nextTask.isCurrent = true;
+            nextTask.isLocked = false;
+          }
+        }
+
+        // Handle course completion reward
+        if (isFullyCompleted && !course.isCompleted) {
+          addEarnings(course.completionReward);
+          updateUser({ 
+            completedCourses: [...user.completedCourses, course.id]
+          });
+          toast.success(`🎉 Course completed! You earned $${course.completionReward.toFixed(2)} reward!`);
+        }
+
+        return {
+          ...course,
+          tasks: updatedTasks,
+          completedTasks: completedCount,
+          isCompleted: isFullyCompleted
+        };
+      }
+      return course;
+    }));
+  };
+
+  const getTierColor = (tier: string) => {
+    switch (tier) {
+      case 'basic': return 'bg-gray-500';
+      case 'premium': return 'bg-blue-500';
+      case 'pro': return 'bg-purple-500';
+      default: return 'bg-gray-500';
+    }
+  };
+
+  if (selectedCourse) {
+    return (
+      <div className="p-6 max-w-4xl mx-auto space-y-6">
+        <div className="flex items-center justify-between">
+          <Button variant="outline" onClick={() => setSelectedCourse(null)}>
+            ← Back to Courses
+          </Button>
+          {selectedCourse.isCompleted && (
+            <div className="flex items-center gap-2 text-green-600">
+              <Gift className="h-5 w-5" />
+              <span className="text-sm">Completed - Earned ${selectedCourse.completionReward.toFixed(2)}</span>
+            </div>
+          )}
+        </div>
+
+        <div className="space-y-6">
+          <div className="flex items-start justify-between">
+            <div>
+              <h1 className="text-3xl">{selectedCourse.title}</h1>
+              <p className="text-muted-foreground">{selectedCourse.description}</p>
+            </div>
+            <div className="text-right">
+              <Badge className={getTierColor(selectedCourse.tier)}>
+                {selectedCourse.tier.toUpperCase()}
+              </Badge>
+              <p className="text-sm text-muted-foreground mt-1">
+                ${selectedCourse.price.toFixed(2)}
+              </p>
+            </div>
+          </div>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center justify-between">
+                <span>Progress</span>
+                {selectedCourse.isCompleted && (
+                  <Badge variant="outline" className="text-green-600">
+                    <Gift className="h-3 w-3 mr-1" />
+                    Reward Earned: ${selectedCourse.completionReward.toFixed(2)}
+                  </Badge>
+                )}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span>{selectedCourse.completedTasks} of {selectedCourse.totalTasks} tasks completed</span>
+                  <span>{Math.round((selectedCourse.completedTasks / selectedCourse.totalTasks) * 100)}%</span>
+                </div>
+                <Progress value={(selectedCourse.completedTasks / selectedCourse.totalTasks) * 100} />
+              </div>
+            </CardContent>
+          </Card>
+
+          <div className="grid gap-4">
+            {selectedCourse.tasks.map((task, index) => (
+              <Card key={task.id} className={task.isCurrent ? 'ring-2 ring-primary' : ''}>
+                <CardContent className="flex items-center justify-between p-6">
+                  <div className="flex items-center gap-4">
+                    <div className="flex items-center justify-center w-10 h-10 rounded-full bg-muted">
+                      {task.isCompleted ? (
+                        <CheckCircle className="h-5 w-5 text-green-500" />
+                      ) : task.isLocked ? (
+                        <Lock className="h-5 w-5 text-muted-foreground" />
+                      ) : task.type === 'vocabulary' ? (
+                        <BookOpen className="h-5 w-5" />
+                      ) : (
+                        <MessageSquare className="h-5 w-5" />
+                      )}
+                    </div>
+                    <div>
+                      <h3 className="font-medium">{task.title}</h3>
+                      <div className="flex items-center gap-2">
+                        <Badge variant={task.type === 'vocabulary' ? 'default' : 'secondary'}>
+                          {task.type === 'vocabulary' ? 'Vocabulary' : 'Conversation'}
+                        </Badge>
+                        {task.isCurrent && <Badge variant="outline">Current</Badge>}
+                        {task.isCompleted && <Badge variant="outline" className="text-green-600">Completed</Badge>}
+                      </div>
+                    </div>
+                  </div>
+                  {(task.isCurrent || !task.isLocked) && !task.isCompleted && (
+                    <Link to={task.type === 'vocabulary' ? '/learn' : '/practice'}>
+                      <Button className="flex items-center gap-2">
+                        <Play className="h-4 w-4" />
+                        Start Learning
+                      </Button>
+                    </Link>
+                  )}
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="p-6 space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl">My Courses</h1>
+          <p className="text-muted-foreground">Structured learning paths tailored to your goals</p>
+        </div>
+        <Button onClick={() => setShowCreateDialog(true)}>
+          <Plus className="h-4 w-4 mr-2" />
+          Create Course
+        </Button>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {courses.map((course) => (
+          <Card key={course.id} className="cursor-pointer hover:shadow-lg transition-shadow">
+            <CardHeader onClick={() => setSelectedCourse(course)}>
+              <CardTitle className="flex items-center justify-between">
+                <span className="flex-1">{course.title}</span>
+                <div className="flex items-center gap-2">
+                  <Badge variant="outline">{course.language}</Badge>
+                  <Badge className={getTierColor(course.tier)}>
+                    {course.tier.toUpperCase()}
+                  </Badge>
+                </div>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4" onClick={() => setSelectedCourse(course)}>
+              <p className="text-sm text-muted-foreground">{course.description}</p>
+              
+              <div className="flex items-center justify-between text-sm">
+                <div className="flex items-center gap-1">
+                  <DollarSign className="h-3 w-3" />
+                  <span>${course.price.toFixed(2)}</span>
+                </div>
+                {course.isCompleted && (
+                  <div className="flex items-center gap-1 text-green-600">
+                    <Gift className="h-3 w-3" />
+                    <span>+${course.completionReward.toFixed(2)}</span>
+                  </div>
+                )}
+              </div>
+              
+              <div className="space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span>Progress</span>
+                  <span>{course.completedTasks}/{course.totalTasks} tasks</span>
+                </div>
+                <Progress value={(course.completedTasks / course.totalTasks) * 100} />
+              </div>
+
+              <div className="flex justify-between items-center pt-2">
+                <Badge variant="secondary">{course.reason}</Badge>
+                <Button variant="outline" size="sm">
+                  View Course
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      <CreateCourseDialog
+        open={showCreateDialog}
+        onClose={() => setShowCreateDialog(false)}
+        onCreate={handleCreateCourse}
+      />
+    </div>
+  );
+}
