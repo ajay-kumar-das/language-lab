@@ -1,0 +1,249 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserLevel {
+  BEGINNER
+  ELEMENTARY
+  INTERMEDIATE
+  UPPER_INTERMEDIATE
+  ADVANCED
+  PROFICIENT
+}
+
+enum SessionType {
+  VOCABULARY
+  CONVERSATION
+  PRONUNCIATION
+  GRAMMAR
+  LISTENING
+  READING
+}
+
+model User {
+  id                  String    @id @default(cuid())
+  email              String    @unique
+  passwordHash       String    @map("password_hash")
+  name               String
+  nativeLanguage     String    @default("en") @map("native_language")
+  targetLanguage     String    @map("target_language")
+  currentLevel       UserLevel @default(BEGINNER) @map("current_level")
+  xpPoints           Int       @default(0) @map("xp_points")
+  dailyStreak        Int       @default(0) @map("daily_streak")
+  maxStreak          Int       @default(0) @map("max_streak")
+  totalLearningTime  Int       @default(0) @map("total_learning_time") // minutes
+  preferredVoice     String?   @map("preferred_voice")
+  timezone           String    @default("UTC")
+  deviceCapabilities Json      @default("{}") @map("device_capabilities")
+  privacySettings    Json      @default("{\"analytics\": true, \"personalization\": true}") @map("privacy_settings")
+  subscriptionTier   String    @default("free") @map("subscription_tier")
+  isActive           Boolean   @default(true) @map("is_active")
+  isVerified         Boolean   @default(false) @map("is_verified")
+  verificationToken  String?   @map("verification_token")
+  passwordResetToken String?   @map("password_reset_token")
+  passwordResetExpires DateTime? @map("password_reset_expires")
+  lastActive         DateTime? @map("last_active")
+  lastLoginAt        DateTime? @map("last_login_at")
+  createdAt          DateTime  @default(now()) @map("created_at")
+  updatedAt          DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  speakingAttempts   SpeakingAttempt[]
+  conversationLogs   ConversationLog[]
+  learningSessions   LearningSession[]
+  userProgress       UserProgress[]
+  achievements       Achievement[]
+  vocabularyMastery  VocabularyMastery[]
+
+  // Performance indexes
+  @@index([email])
+  @@index([targetLanguage])
+  @@index([lastActive])
+  @@index([createdAt])
+  @@index([isActive, isVerified])
+  @@map("users")
+}
+
+model Phrase {
+  id                     String   @id @default(cuid())
+  textNativeLanguage     String   @map("text_native_language") // Translation in user's native language
+  textTargetLanguage     String   @map("text_target_language") // Text in target language
+  phoneticTranscription  String?  @map("phonetic_transcription")
+  topic                  String
+  difficultyLevel        Int      @default(1) @map("difficulty_level")
+  type                   String   @default("word") // "word" or "sentence"
+  imageUrl               String?  @map("image_url")
+  usageContext           String?  @map("usage_context")
+  usageExample           String?  @map("usage_example") // Example usage sentence
+  nativeLanguageCode     String   @map("native_language_code") // e.g., "hi", "en", "es"
+  targetLanguageCode     String   @map("target_language_code") // e.g., "fr", "de", "ja"
+  audioUrl               String?  @map("audio_url") // Reference audio for pronunciation
+  isActive               Boolean  @default(true) @map("is_active")
+  createdAt              DateTime @default(now()) @map("created_at")
+  updatedAt              DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  speakingAttempts SpeakingAttempt[]
+  vocabularyMastery VocabularyMastery[]
+
+  // Performance indexes
+  @@index([targetLanguageCode, nativeLanguageCode])
+  @@index([topic, difficultyLevel])
+  @@index([type, isActive])
+  @@map("phrases")
+}
+
+model SpeakingAttempt {
+  id                 String   @id @default(cuid())
+  userId             String   @map("user_id")
+  phraseId           String   @map("phrase_id")
+  userAudioUrl       String?  @map("user_audio_url")
+  transcription      String?
+  confidenceScore    Float?   @map("confidence_score") // 0.0 - 1.0
+  overallScore       Int?     @map("overall_score") // 1-100
+  pronunciationScore Int?     @map("pronunciation_score") // 1-10
+  clarityScore       Int?     @map("clarity_score") // 1-10
+  fluencyScore       Int?     @map("fluency_score") // 1-10
+  accuracyScore      Int?     @map("accuracy_score") // 1-10
+  aiFeedback         String?  @map("ai_feedback")
+  detailedAnalysis   Json?    @map("detailed_analysis")
+  sessionId          String?  @map("session_id")
+  processingStatus   String   @default("pending") @map("processing_status") // pending, processing, completed, failed
+  attemptDate        DateTime @default(now()) @map("attempt_date")
+
+  // Relations
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  phrase Phrase @relation(fields: [phraseId], references: [id], onDelete: Cascade)
+
+  // Performance indexes
+  @@index([userId, attemptDate])
+  @@index([sessionId])
+  @@index([processingStatus])
+  @@map("speaking_attempts")
+}
+
+model ConversationLog {
+  id                String   @id @default(cuid())
+  userId            String   @map("user_id")
+  sessionId         String   @map("session_id")
+  turnNumber        Int      @map("turn_number")
+  speaker           String   // "user" or "avatar"
+  messageText       String   @map("message_text")
+  audioUrl          String?  @map("audio_url")
+  responseTime      Int?     @map("response_time") // in milliseconds
+  conversationTopic String?  @map("conversation_topic")
+  difficultyLevel   Int?     @map("difficulty_level")
+  sentiment         String?  // positive, neutral, negative
+  emotion           String?  // happy, confused, frustrated, etc.
+  timestamp         DateTime @default(now())
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Performance indexes
+  @@index([userId, sessionId])
+  @@index([timestamp])
+  @@map("conversation_logs")
+}
+
+model LearningSession {
+  id                  String      @id @default(cuid())
+  userId              String      @map("user_id")
+  sessionType         SessionType @map("session_type")
+  languagePracticed   String      @map("language_practiced")
+  topicCovered        String?     @map("topic_covered")
+  wordsLearned        Int         @default(0) @map("words_learned")
+  timeSpent           Int         @default(0) @map("time_spent") // in minutes
+  xpEarned            Int         @default(0) @map("xp_earned")
+  accuracyPercentage  Float?      @map("accuracy_percentage")
+  completionRate      Float?      @map("completion_rate") // percentage of session completed
+  difficultyLevel     Int?        @map("difficulty_level")
+  sessionData         Json?       @map("session_data") // Store session-specific metrics
+  sessionDate         DateTime    @default(now()) @map("session_date")
+  endedAt             DateTime?   @map("ended_at")
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Performance indexes
+  @@index([userId, sessionDate])
+  @@index([sessionType, languagePracticed])
+  @@map("learning_sessions")
+}
+
+model UserProgress {
+  id                        String   @id @default(cuid())
+  userId                    String   @map("user_id")
+  language                  String
+  wordsMastered             Int      @default(0) @map("words_mastered")
+  phrasesMastered           Int      @default(0) @map("phrases_mastered")
+  totalPracticeTime         Int      @default(0) @map("total_practice_time") // in minutes
+  averagePronunciationScore Float?   @map("average_pronunciation_score")
+  averageAccuracyScore      Float?   @map("average_accuracy_score")
+  currentStreak             Int      @default(0) @map("current_streak")
+  levelAchieved             UserLevel @default(BEGINNER) @map("level_achieved")
+  progressPercentage        Float    @default(0.0) @map("progress_percentage")
+  nextLevelXpRequired       Int      @default(100) @map("next_level_xp_required")
+  lastUpdated               DateTime @default(now()) @map("last_updated")
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, language])
+  @@index([language, levelAchieved])
+  @@map("user_progress")
+}
+
+model Achievement {
+  id              String   @id @default(cuid())
+  userId          String   @map("user_id")
+  achievementType String   @map("achievement_type") // streak, xp, mastery, etc.
+  title           String
+  description     String
+  iconUrl         String?  @map("icon_url")
+  xpReward        Int      @default(0) @map("xp_reward")
+  unlockedAt      DateTime @default(now()) @map("unlocked_at")
+  isRead          Boolean  @default(false) @map("is_read")
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Performance indexes
+  @@index([userId, achievementType])
+  @@index([unlockedAt])
+  @@map("achievements")
+}
+
+model VocabularyMastery {
+  id              String   @id @default(cuid())
+  userId          String   @map("user_id")
+  phraseId        String   @map("phrase_id")
+  masteryLevel    Float    @default(0.0) @map("mastery_level") // 0.0 - 1.0
+  timesEncountered Int     @default(0) @map("times_encountered")
+  timesCorrect    Int      @default(0) @map("times_correct")
+  lastEncountered DateTime @default(now()) @map("last_encountered")
+  nextReview      DateTime @map("next_review")
+  reviewInterval  Int      @default(1) @map("review_interval") // days
+  difficulty      Float    @default(0.5) @map("difficulty") // spaced repetition difficulty
+  stability       Float    @default(1.0) @map("stability") // spaced repetition stability
+  isLearned       Boolean  @default(false) @map("is_learned")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  phrase Phrase @relation(fields: [phraseId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, phraseId])
+  @@index([userId, nextReview])
+  @@index([masteryLevel, isLearned])
+  @@map("vocabulary_mastery")
+}

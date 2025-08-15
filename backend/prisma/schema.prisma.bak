@@ -1,0 +1,820 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserLevel {
+  BEGINNER
+  ELEMENTARY
+  INTERMEDIATE
+  UPPER_INTERMEDIATE
+  ADVANCED
+  PROFICIENT
+}
+
+enum SessionType {
+  VOCABULARY
+  CONVERSATION
+  PRONUNCIATION
+  GRAMMAR
+  LISTENING
+  READING
+}
+
+enum AuditAction {
+  CREATE
+  UPDATE
+  DELETE
+  LOGIN
+  LOGOUT
+  PASSWORD_RESET
+  EMAIL_VERIFICATION
+  DATA_EXPORT
+  ACCOUNT_DELETION
+}
+
+enum ProcessingStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+enum UserPreferenceType {
+  AUDIO_SPEED
+  VOICE_TYPE
+  DIFFICULTY_AUTO_ADJUST
+  DAILY_REMINDER
+  PROGRESS_NOTIFICATIONS
+  ANALYTICS_OPT_IN
+  MARKETING_OPT_IN
+}
+
+model User {
+  id                  String    @id @default(cuid())
+  email              String    @unique
+  password        String    @map("password_hash")
+  username           String    @unique
+  firstName          String    @map("first_name")
+  lastName           String    @map("last_name")
+  displayName        String?   @map("display_name") // Optional display name
+  nativeLanguage     String    @default("en") @map("native_language")
+  targetLanguage     String    @map("target_language")
+  currentLevel       UserLevel @default(BEGINNER) @map("current_level")
+  xpPoints           Int       @default(0) @map("xp_points")
+  dailyStreak        Int       @default(0) @map("daily_streak")
+  maxStreak          Int       @default(0) @map("max_streak")
+  totalLearningTime  Int       @default(0) @map("total_learning_time") // minutes
+  preferredVoice     String?   @map("preferred_voice")
+  timezone           String    @default("UTC")
+  deviceCapabilities Json      @default("{}") @map("device_capabilities")
+  privacySettings    Json      @default("{\"analytics\": true, \"personalization\": true}") @map("privacy_settings")
+  subscriptionTier   String    @default("free") @map("subscription_tier")
+  isActive           Boolean   @default(true) @map("is_active")
+  isVerified         Boolean   @default(false) @map("is_verified")
+  verificationToken  String?   @map("verification_token")
+  passwordResetToken String?   @map("password_reset_token")
+  passwordResetExpires DateTime? @map("password_reset_expires")
+  lastActive         DateTime? @map("last_active")
+  lastLoginAt        DateTime? @map("last_login_at")
+  profileImageUrl    String?   @map("profile_image_url")
+  bio                String?   // User biography/description
+  createdAt          DateTime  @default(now()) @map("created_at")
+  updatedAt          DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  speakingAttempts   SpeakingAttempt[]
+  conversationLogs   ConversationLog[]
+  learningSessions   LearningSession[]
+  userProgress       UserProgress[]
+  achievements       Achievement[]
+  vocabularyMastery  VocabularyMastery[]
+  userSessions       UserSession[]
+  auditLogs          AuditLog[]
+  userPreferences    UserPreference[]
+  speechPreferences  UserSpeechPreference?
+  // AI Course Management Relations
+  personalizedCourses PersonalizedCourse[]
+  userGoals          UserGoals?
+  aiInteractions     AIInteraction[]
+
+  // Performance indexes
+  @@index([email])
+  @@index([username])
+  @@index([targetLanguage, nativeLanguage])
+  @@index([lastActive])
+  @@index([createdAt])
+  @@index([isActive, isVerified])
+  @@index([subscriptionTier, isActive])
+  @@map("users")
+}
+
+model UserSession {
+  id            String    @id @default(cuid())
+  userId        String    @map("user_id")
+  sessionToken  String    @unique @map("session_token")
+  ipAddress     String?   @map("ip_address")
+  userAgent     String?   @map("user_agent")
+  deviceInfo    Json?     @map("device_info")
+  location      String?   // Approximate location for security
+  isActive      Boolean   @default(true) @map("is_active")
+  lastActivity  DateTime  @default(now()) @map("last_activity")
+  expiresAt     DateTime  @map("expires_at")
+  createdAt     DateTime  @default(now()) @map("created_at")
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Performance indexes
+  @@index([sessionToken])
+  @@index([userId, isActive])
+  @@index([expiresAt])
+  @@map("user_sessions")
+}
+
+model UserPreference {
+  id           String             @id @default(cuid())
+  userId       String             @map("user_id")
+  type         UserPreferenceType
+  key          String             // Specific preference key
+  value        String             // Preference value as string
+  isEnabled    Boolean            @default(true) @map("is_enabled")
+  createdAt    DateTime           @default(now()) @map("created_at")
+  updatedAt    DateTime           @updatedAt @map("updated_at")
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, type, key])
+  @@index([userId, type])
+  @@map("user_preferences")
+}
+
+model AuditLog {
+  id           String      @id @default(cuid())
+  userId       String?     @map("user_id") // Nullable for system actions
+  action       AuditAction
+  resource     String      // Table/resource affected
+  resourceId   String?     @map("resource_id") // ID of the affected resource
+  oldValues    Json?       @map("old_values") // Previous values for updates
+  newValues    Json?       @map("new_values") // New values for creates/updates
+  ipAddress    String?     @map("ip_address")
+  userAgent    String?     @map("user_agent")
+  metadata     Json?       // Additional context
+  createdAt    DateTime    @default(now()) @map("created_at")
+
+  // Relations
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  // Performance indexes
+  @@index([userId, createdAt])
+  @@index([action, resource])
+  @@index([createdAt])
+  @@index([resource, resourceId])
+  @@map("audit_logs")
+}
+
+model Phrase {
+  id                     String   @id @default(cuid())
+  textNativeLanguage     String   @map("text_native_language")
+  textTargetLanguage     String   @map("text_target_language")
+  phoneticTranscription  String?  @map("phonetic_transcription")
+  topic                  String
+  difficultyLevel        Int      @default(1) @map("difficulty_level")
+  type                   String   @default("word")
+  imageUrl               String?  @map("image_url")
+  usageContext           String?  @map("usage_context")
+  usageExample           String?  @map("usage_example")
+  nativeLanguageCode     String   @map("native_language_code")
+  targetLanguageCode     String   @map("target_language_code")
+  audioUrl               String?  @map("audio_url")
+  tags                   String[] @default([])
+  frequency              Float?
+  isActive               Boolean  @default(true) @map("is_active")
+  createdAt              DateTime @default(now()) @map("created_at")
+  updatedAt              DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  speakingAttempts SpeakingAttempt[]
+  vocabularyMastery VocabularyMastery[]
+
+  // Performance indexes optimized for <50ms queries
+  @@index([targetLanguageCode, nativeLanguageCode, difficultyLevel])
+  @@index([topic, difficultyLevel, isActive])
+  @@index([type, isActive, frequency])
+  @@index([frequency], map: "idx_phrases_frequency_desc")
+  @@index([createdAt], map: "idx_phrases_created_recent")
+  @@map("phrases")
+}
+
+model SpeakingAttempt {
+  id                 String           @id @default(cuid())
+  userId             String           @map("user_id")
+  phraseId           String           @map("phrase_id")
+  userAudioUrl       String?          @map("user_audio_url")
+  transcription      String?
+  confidenceScore    Float?           @map("confidence_score")
+  overallScore       Int?             @map("overall_score")
+  pronunciationScore Int?             @map("pronunciation_score")
+  clarityScore       Int?             @map("clarity_score")
+  fluencyScore       Int?             @map("fluency_score")
+  accuracyScore      Int?             @map("accuracy_score")
+  aiFeedback         String?          @map("ai_feedback")
+  detailedAnalysis   Json?            @map("detailed_analysis")
+  sessionId          String?          @map("session_id")
+  processingStatus   ProcessingStatus @default(PENDING) @map("processing_status")
+  processingTime     Int?             @map("processing_time")
+  audioFileSize      Int?             @map("audio_file_size")
+  audioDuration      Float?           @map("audio_duration")
+  attemptDate        DateTime         @default(now()) @map("attempt_date")
+
+  // Relations
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  phrase Phrase @relation(fields: [phraseId], references: [id], onDelete: Cascade)
+
+  // Performance indexes optimized for analytics and processing
+  @@index([userId, attemptDate, overallScore])
+  @@index([sessionId, attemptDate])
+  @@index([processingStatus, attemptDate])
+  @@index([phraseId, overallScore, attemptDate])
+  @@index([userId, processingStatus])
+  @@map("speaking_attempts")
+}
+
+model ConversationLog {
+  id                String   @id @default(cuid())
+  userId            String   @map("user_id")
+  sessionId         String   @map("session_id")
+  turnNumber        Int      @map("turn_number")
+  speaker           String
+  messageText       String   @map("message_text")
+  audioUrl          String?  @map("audio_url")
+  responseTime      Int?     @map("response_time")
+  conversationTopic String?  @map("conversation_topic")
+  difficultyLevel   Int?     @map("difficulty_level")
+  sentiment         String?
+  emotion           String?
+  aiModelUsed       String?  @map("ai_model_used")
+  timestamp         DateTime @default(now())
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Performance indexes
+  @@index([userId, sessionId])
+  @@index([timestamp])
+  @@index([conversationTopic, difficultyLevel])
+  @@map("conversation_logs")
+}
+
+model LearningSession {
+  id                  String      @id @default(cuid())
+  userId              String      @map("user_id")
+  sessionType         SessionType @map("session_type")
+  languagePracticed   String      @map("language_practiced")
+  topicCovered        String?     @map("topic_covered")
+  wordsLearned        Int         @default(0) @map("words_learned")
+  timeSpent           Int         @default(0) @map("time_spent")
+  xpEarned            Int         @default(0) @map("xp_earned")
+  accuracyPercentage  Float?      @map("accuracy_percentage")
+  completionRate      Float?      @map("completion_rate")
+  difficultyLevel     Int?        @map("difficulty_level")
+  sessionData         Json?       @map("session_data")
+  performanceMetrics  Json?       @map("performance_metrics")
+  sessionDate         DateTime    @default(now()) @map("session_date")
+  endedAt             DateTime?   @map("ended_at")
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Performance indexes
+  @@index([userId, sessionDate])
+  @@index([sessionType, languagePracticed])
+  @@index([sessionDate, accuracyPercentage])
+  @@map("learning_sessions")
+}
+
+model UserProgress {
+  id                        String    @id @default(cuid())
+  userId                    String    @map("user_id")
+  language                  String
+  wordsMastered             Int       @default(0) @map("words_mastered")
+  phrasesMastered           Int       @default(0) @map("phrases_mastered")
+  totalPracticeTime         Int       @default(0) @map("total_practice_time")
+  averagePronunciationScore Float?    @map("average_pronunciation_score")
+  averageAccuracyScore      Float?    @map("average_accuracy_score")
+  currentStreak             Int       @default(0) @map("current_streak")
+  levelAchieved             UserLevel @default(BEGINNER) @map("level_achieved")
+  progressPercentage        Float     @default(0.0) @map("progress_percentage")
+  nextLevelXpRequired       Int       @default(100) @map("next_level_xp_required")
+  weeklyGoal               Int       @default(5) @map("weekly_goal")
+  monthlyGoal              Int       @default(20) @map("monthly_goal")
+  strongestSkill           String?   @map("strongest_skill")
+  weakestSkill             String?   @map("weakest_skill")
+  lastUpdated              DateTime  @default(now()) @map("last_updated")
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, language])
+  @@index([language, levelAchieved])
+  @@index([progressPercentage, levelAchieved])
+  @@map("user_progress")
+}
+
+model Achievement {
+  id              String   @id @default(cuid())
+  userId          String   @map("user_id")
+  achievementType String   @map("achievement_type")
+  title           String
+  description     String
+  iconUrl         String?  @map("icon_url")
+  xpReward        Int      @default(0) @map("xp_reward")
+  badgeLevel      String?  @map("badge_level")
+  category        String?
+  unlockedAt      DateTime @default(now()) @map("unlocked_at")
+  isRead          Boolean  @default(false) @map("is_read")
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Performance indexes
+  @@index([userId, achievementType])
+  @@index([unlockedAt])
+  @@index([category, badgeLevel])
+  @@map("achievements")
+}
+
+model VocabularyMastery {
+  id              String   @id @default(cuid())
+  userId          String   @map("user_id")
+  phraseId        String   @map("phrase_id")
+  masteryLevel    Float    @default(0.0) @map("mastery_level")
+  timesEncountered Int     @default(0) @map("times_encountered")
+  timesCorrect    Int      @default(0) @map("times_correct")
+  lastEncountered DateTime @default(now()) @map("last_encountered")
+  nextReview      DateTime @map("next_review")
+  reviewInterval  Int      @default(1) @map("review_interval")
+  difficulty      Float    @default(0.5) @map("difficulty")
+  stability       Float    @default(1.0) @map("stability")
+  retrievability Float    @default(0.9) @map("retrievability")
+  isLearned       Boolean  @default(false) @map("is_learned")
+  learningPhase   String   @default("new") @map("learning_phase")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  phrase Phrase @relation(fields: [phraseId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, phraseId])
+  @@index([userId, nextReview])
+  @@index([masteryLevel, isLearned])
+  @@index([learningPhase, nextReview])
+  @@map("vocabulary_mastery")
+}
+
+model SystemHealth {
+  id                String   @id @default(cuid())
+  serviceName       String   @map("service_name")
+  status            String
+  responseTime      Float?   @map("response_time")
+  cpuUsage          Float?   @map("cpu_usage")
+  memoryUsage       Float?   @map("memory_usage")
+  diskUsage         Float?   @map("disk_usage")
+  activeConnections Int?     @map("active_connections")
+  errorRate         Float?   @map("error_rate")
+  lastChecked       DateTime @default(now()) @map("last_checked")
+
+  @@index([serviceName, lastChecked])
+  @@index([status])
+  @@map("system_health")
+}
+
+model UserSpeechPreference {
+  id                 String      @id @default(cuid())
+  userId             String      @map("user_id")
+  preferredProvider  String      @default("WHISPER_API") @map("preferred_provider")
+  allowBrowserSpeech Boolean     @default(true) @map("allow_browser_speech")
+  privacyMode        Boolean     @default(false) @map("privacy_mode")
+  enableOfflineMode  Boolean     @default(false) @map("enable_offline_mode")
+  audioQuality       String      @default("standard") @map("audio_quality") // "low", "standard", "high"
+  autoFallback       Boolean     @default(true) @map("auto_fallback")
+  maxProcessingTime  Int         @default(30000) @map("max_processing_time") // milliseconds
+  enableCaching      Boolean     @default(true) @map("enable_caching")
+  preferredLanguage  String?     @map("preferred_language")
+  customSettings     Json        @default("{}") @map("custom_settings")
+  createdAt          DateTime    @default(now()) @map("created_at")
+  updatedAt          DateTime    @updatedAt @map("updated_at")
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Constraints and indexes
+  @@unique([userId])
+  @@index([userId, preferredProvider])
+  @@index([privacyMode, enableOfflineMode])
+  @@map("user_speech_preferences")
+}
+
+
+// AI Course Management Tables
+
+enum CourseTier {
+  BASIC
+  PREMIUM
+  PRO
+}
+
+enum TaskType {
+  VOCABULARY
+  GRAMMAR
+  CONVERSATION
+  PRONUNCIATION
+  LISTENING
+  READING
+  WRITING
+  CULTURAL
+}
+
+enum LearningMotivation {
+  TRAVEL
+  BUSINESS
+  FAMILY
+  ACADEMIC
+  PERSONAL_GROWTH
+  CAREER_ADVANCEMENT
+  CULTURAL_INTEREST
+}
+
+enum LearningStyle {
+  VISUAL
+  AUDITORY
+  KINESTHETIC
+  MIXED
+}
+
+model PersonalizedCourse {
+  id                       String            @id @default(cuid())
+  userId                   String            @map("user_id")
+  courseName              String            @map("course_name")
+  targetLanguage          String            @map("target_language")
+  nativeLanguage          String            @map("native_language")
+  learningMotivation      LearningMotivation @map("learning_motivation")
+  proficiencyLevel        UserLevel         @map("proficiency_level")
+  courseTier              CourseTier        @default(BASIC) @map("course_tier")
+  totalLessons            Int               @map("total_lessons")
+  estimatedDurationWeeks  Int?              @map("estimated_duration_weeks")
+  aiGenerationMetadata    Json              @map("ai_generation_metadata")
+  courseStructure         Json              @map("course_structure")
+  learningObjectives      Json              @map("learning_objectives")
+  culturalContext         Json?             @map("cultural_context")
+  price                   Decimal?          @db.Decimal(10,2)
+  completionReward        Decimal?          @map("completion_reward") @db.Decimal(10,2)
+  progressPercentage      Decimal           @default(0.00) @map("progress_percentage") @db.Decimal(5,2)
+  isActive                Boolean           @default(true) @map("is_active")
+  aiProviderUsed          String?           @map("ai_provider_used")
+  generationTimestamp     DateTime          @default(now()) @map("generation_timestamp")
+  createdAt               DateTime          @default(now()) @map("created_at")
+  updatedAt               DateTime          @updatedAt @map("updated_at")
+
+  // Relations
+  user       User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tasks      CourseTask[]
+  userGoals  UserGoals?
+
+  // Performance indexes
+  @@index([userId, isActive])
+  @@index([targetLanguage, proficiencyLevel])
+  @@index([courseTier, isActive])
+  @@index([createdAt])
+  @@map("personalized_courses")
+}
+
+model CourseTask {
+  id                      String     @id @default(cuid())
+  courseId               String     @map("course_id")
+  taskOrder              Int        @map("task_order")
+  taskType               TaskType   @map("task_type")
+  taskName               String     @map("task_name")
+  taskDescription        String?    @map("task_description")
+  difficultyLevel        Int        @map("difficulty_level")
+  estimatedDurationMinutes Int?      @map("estimated_duration_minutes")
+  taskContent            Json       @map("task_content")
+  scoringCriteria        Json?      @map("scoring_criteria")
+  aiFeedbackPrompts      Json?      @map("ai_feedback_prompts")
+  prerequisites          Json?      @map("prerequisites")
+  learningObjectives     Json?      @map("learning_objectives")
+  multimediaAssets       Json?      @map("multimedia_assets")
+  isCompleted            Boolean    @default(false) @map("is_completed")
+  completedAt            DateTime?  @map("completed_at")
+  userScore              Int?       @map("user_score")
+  attempts               Int        @default(0)
+  createdAt              DateTime   @default(now()) @map("created_at")
+  updatedAt              DateTime   @updatedAt @map("updated_at")
+
+  // Relations
+  course PersonalizedCourse @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  // Performance indexes
+  @@index([courseId, taskOrder])
+  @@index([taskType, difficultyLevel])
+  @@index([isCompleted, completedAt])
+  @@map("course_tasks")
+}
+
+model UserGoals {
+  id                         String            @id @default(cuid())
+  userId                     String            @unique @map("user_id")
+  courseId                   String?           @unique @map("course_id")
+  primaryMotivation          LearningMotivation @map("primary_motivation")
+  specificScenarios          Json?             @map("specific_scenarios")
+  learningStylePreferences   Json              @map("learning_style_preferences")
+  timeCommitmentDaily        Int?              @map("time_commitment_daily")
+  timeCommitmentWeekly       Int?              @map("time_commitment_weekly")
+  culturalInterests          Json?             @map("cultural_interests")
+  businessContext            Json?             @map("business_context")
+  travelDestinations         Json?             @map("travel_destinations")
+  accessibilityNeeds         Json?             @map("accessibility_needs")
+  aiAssessmentResults        Json?             @map("ai_assessment_results")
+  proficiencyAssessment      Json?             @map("proficiency_assessment")
+  learningGoalsShortTerm     Json?             @map("learning_goals_short_term")
+  learningGoalsLongTerm      Json?             @map("learning_goals_long_term")
+  preferredLearningTimes     Json?             @map("preferred_learning_times")
+  deviceCapabilities         Json?             @map("device_capabilities")
+  createdAt                  DateTime          @default(now()) @map("created_at")
+  updatedAt                  DateTime          @updatedAt @map("updated_at")
+
+  // Relations
+  user   User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course PersonalizedCourse?  @relation(fields: [courseId], references: [id], onDelete: SetNull)
+
+  // Performance indexes
+  @@index([primaryMotivation])
+  @@index([createdAt])
+  @@map("user_goals")
+}
+
+model AIInteraction {
+  id               String   @id @default(cuid())
+  userId           String   @map("user_id")
+  interactionType  String   @map("interaction_type")
+  aiProvider       String   @map("ai_provider")
+  prompt           String
+  response         String
+  tokenUsage       Json?    @map("token_usage")
+  processingTime   Int?     @map("processing_time")
+  cost             Decimal? @db.Decimal(10,4)
+  quality          Float?   @map("quality_score")
+  createdAt        DateTime @default(now()) @map("created_at")
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Performance indexes
+  @@index([userId, createdAt])
+  @@index([aiProvider, interactionType])
+  @@index([createdAt])
+  @@map("ai_interactions")
+}
+
+
+// Dynamic Task Management Tables
+
+enum LearningPhase {
+  NEW
+  LEARNING
+  REVIEW
+  MASTERED
+}
+
+enum DifficultyAdjustment {
+  DECREASE_MAJOR
+  DECREASE_MINOR
+  MAINTAIN
+  INCREASE_MINOR
+  INCREASE_MAJOR
+}
+
+enum PerformancePattern {
+  IMPROVING
+  STABLE
+  DECLINING
+  STRUGGLING
+  EXCELLING
+}
+
+model TaskSequence {
+  id                  String    @id @default(cuid())
+  courseId           String    @map("course_id")
+  userId             String    @map("user_id")
+  sequenceName       String    @map("sequence_name")
+  prerequisiteRules  Json      @map("prerequisite_rules")
+  difficultyProgression Json   @map("difficulty_progression")
+  spacedRepetitionConfig Json  @map("spaced_repetition_config")
+  adaptiveSettings   Json      @map("adaptive_settings")
+  learningPath       Json      @map("learning_path")
+  currentPosition    Int       @default(0) @map("current_position")
+  isActive          Boolean   @default(true) @map("is_active")
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  course PersonalizedCourse @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  taskResults TaskResult[]
+  
+  @@index([courseId, userId])
+  @@index([userId, isActive])
+  @@map("task_sequences")
+}
+
+model TaskResult {
+  id                    String               @id @default(cuid())
+  sequenceId           String               @map("sequence_id")
+  taskId               String               @map("task_id")
+  userId               String               @map("user_id")
+  attemptNumber        Int                  @map("attempt_number")
+  score                Float                @default(0.0)
+  accuracy             Float                @default(0.0)
+  completionTime       Int?                 @map("completion_time") // seconds
+  difficultyAttempted  Int                  @map("difficulty_attempted")
+  performanceMetrics   Json                 @map("performance_metrics")
+  learningInsights     Json?                @map("learning_insights")
+  adaptationTriggers   Json?                @map("adaptation_triggers")
+  nextDifficultyLevel  Int?                 @map("next_difficulty_level")
+  spacedRepetitionData Json?                @map("spaced_repetition_data")
+  attentionMetrics     Json?                @map("attention_metrics")
+  engagementScore      Float?               @map("engagement_score")
+  completedAt          DateTime             @default(now()) @map("completed_at")
+
+  // Relations
+  sequence TaskSequence @relation(fields: [sequenceId], references: [id], onDelete: Cascade)
+  task     CourseTask   @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  user     User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([sequenceId, completedAt])
+  @@index([userId, completedAt])
+  @@index([taskId, score])
+  @@map("task_results")
+}
+
+model AdaptiveLearningProfile {
+  id                    String              @id @default(cuid())
+  userId               String              @unique @map("user_id")
+  detectedLearningStyle Json               @map("detected_learning_style")
+  performancePatterns  Json               @map("performance_patterns")
+  strengthAreas        Json               @map("strength_areas")
+  weaknessAreas        Json               @map("weakness_areas")
+  optimalDifficultyCurve Json             @map("optimal_difficulty_curve")
+  attentionSpanMetrics Json               @map("attention_span_metrics")
+  learningVelocity     Float              @default(1.0) @map("learning_velocity")
+  retentionRate        Float              @default(0.85) @map("retention_rate")
+  engagementTrends     Json               @map("engagement_trends")
+  recommendedTaskTypes Json               @map("recommended_task_types")
+  adaptiveSettings     Json               @map("adaptive_settings")
+  lastAnalysis         DateTime           @default(now()) @map("last_analysis")
+  createdAt            DateTime           @default(now()) @map("created_at")
+  updatedAt            DateTime           @updatedAt @map("updated_at")
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, lastAnalysis])
+  @@map("adaptive_learning_profiles")
+}
+
+model SpacedRepetitionSchedule {
+  id                String         @id @default(cuid())
+  userId           String         @map("user_id")
+  taskId           String         @map("task_id")
+  contentId        String?        @map("content_id") // For specific content items
+  learningPhase    LearningPhase  @default(NEW) @map("learning_phase")
+  currentInterval  Int            @default(1) @map("current_interval") // days
+  easeFactor       Float          @default(2.5) @map("ease_factor")
+  repetitions      Int            @default(0)
+  lastReviewed     DateTime?      @map("last_reviewed")
+  nextReview       DateTime       @map("next_review")
+  difficultyLevel  Int            @map("difficulty_level")
+  retentionScore   Float          @default(0.0) @map("retention_score")
+  stabilityScore   Float          @default(1.0) @map("stability_score")
+  retrievability   Float          @default(0.9)
+  memoryStrength   Float          @default(0.0) @map("memory_strength")
+  forgettingCurve  Json           @map("forgetting_curve")
+  isActive         Boolean        @default(true) @map("is_active")
+  createdAt        DateTime       @default(now()) @map("created_at")
+  updatedAt        DateTime       @updatedAt @map("updated_at")
+
+  // Relations
+  user User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  task CourseTask @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, taskId, contentId])
+  @@index([userId, nextReview])
+  @@index([learningPhase, nextReview])
+  @@map("spaced_repetition_schedules")
+}
+
+model TaskAnalytics {
+  id                   String    @id @default(cuid())
+  taskId              String    @map("task_id")
+  userId              String    @map("user_id")
+  sessionId           String?   @map("session_id")
+  startTime           DateTime  @default(now()) @map("start_time")
+  endTime             DateTime? @map("end_time")
+  totalTimeSpent      Int?      @map("total_time_spent") // milliseconds
+  interactionEvents   Json      @map("interaction_events")
+  attentionMetrics    Json      @map("attention_metrics")
+  engagementLevels    Json      @map("engagement_levels")
+  difficultyRatings   Json      @map("difficulty_ratings")
+  frustractionEvents  Json?     @map("frustraction_events")
+  helpSeekingBehavior Json?     @map("help_seeking_behavior")
+  taskSwitchingEvents Json?     @map("task_switching_events")
+  deviceInteractions  Json?     @map("device_interactions")
+  performanceMetrics  Json      @map("performance_metrics")
+  qualitativeData     Json?     @map("qualitative_data")
+
+  // Relations
+  task CourseTask @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  user User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([taskId, startTime])
+  @@index([userId, startTime])
+  @@index([sessionId])
+  @@map("task_analytics")
+}
+
+model LearningSessionV2 {
+  id                   String    @id @default(cuid())
+  userId              String    @map("user_id")
+  sessionToken        String    @unique @map("session_token")
+  startTime           DateTime  @default(now()) @map("start_time")
+  endTime             DateTime? @map("end_time")
+  totalDuration       Int?      @map("total_duration") // milliseconds
+  tasksAttempted      Int       @default(0) @map("tasks_attempted")
+  tasksCompleted      Int       @default(0) @map("tasks_completed")
+  averageScore        Float?    @map("average_score")
+  difficultyProgression Json    @map("difficulty_progression")
+  learningVelocity    Float?    @map("learning_velocity")
+  engagementMetrics   Json      @map("engagement_metrics")
+  adaptationEvents    Json?     @map("adaptation_events")
+  breakEvents         Json?     @map("break_events")
+  deviceInfo          Json?     @map("device_info")
+  networkConditions   Json?     @map("network_conditions")
+  isActive            Boolean   @default(true) @map("is_active")
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  realTimeEvents RealTimeEvent[]
+
+  @@index([userId, startTime])
+  @@index([sessionToken])
+  @@index([isActive, startTime])
+  @@map("learning_sessions_v2")
+}
+
+model RealTimeEvent {
+  id              String          @id @default(cuid())
+  sessionId      String          @map("session_id")
+  eventType      String          @map("event_type")
+  eventData      Json            @map("event_data")
+  timestamp      DateTime        @default(now())
+  sequenceNumber Int             @map("sequence_number")
+  isProcessed    Boolean         @default(false) @map("is_processed")
+
+  // Relations
+  session LearningSessionV2 @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId, timestamp])
+  @@index([eventType, isProcessed])
+  @@map("real_time_events")
+}
+EOF < /dev/null
+
+// Extended User model relations for dynamic task management
+// Note: Add these fields to the existing User model above
+// taskSequences              TaskSequence[]
+// taskResults               TaskResult[]
+// adaptiveLearningProfile   AdaptiveLearningProfile?
+// spacedRepetitionSchedules SpacedRepetitionSchedule[]
+// taskAnalytics             TaskAnalytics[]
+// learningSessionsV2        LearningSessionV2[]
+
+// Extended CourseTask model relations for dynamic task management  
+// Note: Add these fields to the existing CourseTask model above
+// taskResults               TaskResult[]
+// spacedRepetitionSchedules SpacedRepetitionSchedule[]
+// taskAnalytics             TaskAnalytics[]
+
+// Extended PersonalizedCourse model relations for dynamic task management
+// Note: Add these fields to the existing PersonalizedCourse model above
+// taskSequences TaskSequence[]
+EOF < /dev/null

@@ -1,0 +1,159 @@
+import express from "express";
+import cors from "cors";
+import helmet from "helmet";
+import compression from "compression";
+import dotenv from "dotenv";
+import { prisma, connectDatabase } from "./config/database";
+import authRoutes from "./routes/auth";
+import userRoutes from "./routes/users";
+import vocabularyRoutes from "./routes/vocabulary";
+
+dotenv.config();
+
+const app = express();
+const PORT = process.env.PORT || 3001;
+
+// Middleware
+app.use(helmet());
+app.use(compression());
+app.use(cors({
+  origin: process.env.CORS_ORIGIN?.split(",") || ["http://localhost:3005", "http://localhost:3000"],
+  credentials: true
+}));
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// API Routes
+app.use("/api/v1/auth", authRoutes);
+app.use("/api/v1/users", userRoutes);
+app.use("/api/v1/vocabulary", vocabularyRoutes);
+
+// Health check endpoints
+app.get("/health", async (req, res) => {
+  try {
+    await prisma.$queryRaw`SELECT 1`;
+    res.json({ 
+      status: "ok", 
+      message: "LinguaLeap Backend is running\!",
+      timestamp: new Date().toISOString(),
+      database: "connected"
+    });
+  } catch (error) {
+    res.status(503).json({
+      status: "error",
+      message: "Database connection failed",
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
+app.get("/api/v1/health", async (req, res) => {
+  try {
+    await prisma.$queryRaw`SELECT 1`;
+    res.json({ 
+      status: "healthy", 
+      timestamp: new Date().toISOString(),
+      version: "1.0.0",
+      database: "connected"
+    });
+  } catch (error) {
+    res.status(503).json({
+      status: "unhealthy",
+      timestamp: new Date().toISOString(),
+      version: "1.0.0",
+      error: "Database connection failed"
+    });
+  }
+});
+
+// Database test endpoint
+app.get("/api/v1/db-test", async (req, res) => {
+  try {
+    const result = await prisma.$queryRaw`SELECT 1 as test_value, NOW() as current_time`;
+    const userCount = await prisma.user.count();
+    const phraseCount = await prisma.phrase.count();
+    
+    res.json({
+      status: "success",
+      message: "Database connection test successful",
+      data: {
+        testQuery: result,
+        statistics: {
+          totalUsers: userCount,
+          totalPhrases: phraseCount
+        }
+      },
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    res.status(500).json({
+      status: "error",
+      message: "Database test failed",
+      error: error instanceof Error ? error.message : String(error),
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
+// API info endpoint
+app.get("/api/v1", (req, res) => {
+  res.json({
+    message: "LinguaLeap API v1",
+    version: "1.0.0",
+    endpoints: [
+      "GET /health - Service health check",
+      "GET /api/v1/health - API health check", 
+      "GET /api/v1/db-test - Database connectivity test"
+    ],
+    timestamp: new Date().toISOString()
+  });
+});
+
+// Error handling
+app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+  console.error("Error:", err);
+  res.status(err.status || 500).json({
+    error: "Internal server error",
+    message: process.env.NODE_ENV === "development" ? err.message : "Something went wrong",
+    timestamp: new Date().toISOString()
+  });
+});
+
+// 404 handler
+app.use("*", (req, res) => {
+  res.status(404).json({
+    error: "Not found",
+    message: `Route ${req.originalUrl} not found`,
+    timestamp: new Date().toISOString()
+  });
+});
+
+// Start server
+async function startServer() {
+  try {
+    console.log("Connecting to database...");
+    await connectDatabase();
+    
+    app.listen(PORT, () => {
+      console.log(`🚀 LinguaLeap Backend running on port ${PORT}`);
+      console.log(`📊 Health check: http://localhost:${PORT}/health`);
+      console.log(`🔍 API health: http://localhost:${PORT}/api/v1/health`);
+      console.log(`🗄️ Database test: http://localhost:${PORT}/api/v1/db-test`);
+      console.log(`🌍 Environment: ${process.env.NODE_ENV}`);
+    });
+  } catch (error) {
+    console.error("Failed to start server:", error);
+    process.exit(1);
+  }
+}
+
+// Graceful shutdown
+process.on("SIGINT", async () => {
+  console.log("Shutting down server...");
+  await prisma.$disconnect();
+  process.exit(0);
+});
+
+startServer();
+
+export default app;

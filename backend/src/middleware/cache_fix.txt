@@ -1,0 +1,23 @@
+    res.json = function(data: any) {
+      // Get invalidation patterns
+      const patternsToInvalidate = typeof patterns === "function" ? patterns(req) : patterns;
+      
+      // Invalidate cache patterns asynchronously (don't await)
+      const invalidationPromises = patternsToInvalidate.map(pattern => 
+        redisService.deleteByPattern(pattern)
+      );
+      
+      Promise.allSettled(invalidationPromises).then(results => {
+        const totalInvalidated = results
+          .filter((result): result is PromiseFulfilledResult<number> => result.status === "fulfilled")
+          .reduce((sum, result) => sum + result.value, 0);
+        
+        console.log(`[Cache] Invalidated ${totalInvalidated} cache entries for patterns:`, patternsToInvalidate);
+      }).catch(error => {
+        console.error("[Cache] Error invalidating cache:", error);
+      });
+      
+      // Call original json method immediately
+      return originalJson.call(this, data);
+    };
+EOF < /dev/null

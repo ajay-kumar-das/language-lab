@@ -1,0 +1,308 @@
+import express from 'express';
+import bcrypt from 'bcrypt';
+import jwt, { SignOptions } from 'jsonwebtoken';
+import { PrismaClient } from '@prisma/client';
+import { authMiddleware } from '../middleware/auth';
+
+const router = express.Router();
+const prisma = new PrismaClient();
+
+// Register endpoint
+router.post("/register", async (req, res) => {
+  try {
+    const { email, password, firstName, lastName, username } = req.body;
+
+    if (!email || !password || !firstName || !lastName || !username) {
+      return res.status(400).json({
+        status: "error",
+        message: "Email, password, firstName, lastName, and username are required"
+      });
+    }
+
+    if (password.length < 6) {
+      return res.status(400).json({
+        status: "error",
+        message: "Password must be at least 6 characters long"
+      });
+    }
+
+    const existingUser = await prisma.user.findUnique({
+      where: { email: email.toLowerCase() }
+    });
+
+    if (existingUser) {
+      return res.status(409).json({
+        status: "error",
+        message: "User already exists with this email"
+      });
+    }
+
+    const existingUsername = await prisma.user.findUnique({
+      where: { username }
+    });
+
+    if (existingUsername) {
+      return res.status(409).json({
+        status: "error",
+        message: "Username already taken"
+      });
+    }
+
+    const saltRounds = parseInt(process.env.BCRYPT_ROUNDS || "12");
+    const hashedPassword = await bcrypt.hash(password, saltRounds);
+
+    const user = await prisma.user.create({
+      data: {
+        email: email.toLowerCase(),
+        username,
+        firstName,
+        lastName,
+        password: hashedPassword,
+        targetLanguage: "es",
+        nativeLanguage: "en"
+      }
+    });
+
+    const token = jwt.sign(
+      { 
+        id: user.id,
+        userId: user.id, 
+        email: user.email 
+      },
+      process.env.JWT_SECRET!,
+      { 
+        expiresIn: "7d" 
+      }
+    );
+
+    res.status(201).json({
+      status: "success",
+      message: "User registered successfully",
+      data: {
+        user: {
+          id: user.id,
+          email: user.email,
+          username: user.username,
+          firstName: user.firstName,
+          lastName: user.lastName
+        },
+        token
+      }
+    });
+
+  } catch (error) {
+    console.error("Registration error:", error);
+    res.status(500).json({
+      status: "error",
+      message: "Internal server error during registration"
+    });
+  }
+});
+// Login endpoint
+router.post("/login", async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+      return res.status(400).json({
+        status: "error",
+        message: "Email and password are required"
+      });
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { email: email.toLowerCase() }
+    });
+
+    if (!user) {
+      return res.status(401).json({
+        status: "error",
+        message: "Invalid email or password"
+      });
+    }
+
+    const isValidPassword = await bcrypt.compare(password, user.password);
+
+    if (!isValidPassword) {
+      return res.status(401).json({
+        status: "error",
+        message: "Invalid email or password"
+      });
+    }
+
+    const token = jwt.sign(
+      { 
+        id: user.id,
+        userId: user.id, 
+        email: user.email 
+      },
+      process.env.JWT_SECRET!,
+      { 
+        expiresIn: "7d" 
+      }
+    );
+
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { lastLoginAt: new Date() }
+    });
+
+    res.status(200).json({
+      status: "success",
+      message: "Login successful",
+      data: {
+        user: {
+          id: user.id,
+          email: user.email,
+          username: user.username,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          lastLoginAt: new Date()
+        },
+        token
+      }
+    });
+
+  } catch (error) {
+    console.error("Login error:", error);
+    res.status(500).json({
+      status: "error",
+      message: "Internal server error during login"
+    });
+  }
+});
+// Refresh token endpoint
+router.post("/refresh", authMiddleware, async (req, res) => {
+  try {
+    const userId = req.user?.userId;
+
+    if (!userId) {
+      return res.status(401).json({
+        status: "error",
+        message: "Invalid token"
+      });
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { id: userId }
+    });
+
+    if (!user) {
+      return res.status(401).json({
+        status: "error",
+        message: "User not found"
+      });
+    }
+
+    const newToken = jwt.sign(
+      { 
+        id: user.id,
+        userId: user.id, 
+        email: user.email 
+      },
+      process.env.JWT_SECRET!,
+      { 
+        expiresIn: "7d" 
+      }
+    );
+
+    res.status(200).json({
+      status: "success",
+      message: "Token refreshed successfully",
+      data: {
+        user: {
+          id: user.id,
+          email: user.email,
+          username: user.username,
+          firstName: user.firstName,
+          lastName: user.lastName
+        },
+        token: newToken
+      }
+    });
+
+  } catch (error) {
+    console.error("Token refresh error:", error);
+    res.status(500).json({
+      status: "error",
+      message: "Internal server error during token refresh"
+    });
+  }
+});
+// Get current user profile
+router.get("/me", authMiddleware, async (req, res) => {
+  try {
+    const userId = req.user?.userId;
+
+    if (!userId) {
+      return res.status(401).json({
+        status: "error",
+        message: "Invalid token"
+      });
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      include: {
+        userGoals: true,
+        personalizedCourses: {
+          select: {
+            id: true,
+            courseName: true,
+            targetLanguage: true,
+            proficiencyLevel: true,
+            isActive: true,
+            totalLessons: true,
+            estimatedDurationWeeks: true
+          }
+        }
+      }
+    });
+
+    if (!user) {
+      return res.status(404).json({
+        status: "error",
+        message: "User not found"
+      });
+    }
+
+    res.status(200).json({
+      status: "success",
+      data: {
+        user: {
+          id: user.id,
+          email: user.email,
+          username: user.username,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          lastLoginAt: user.lastLoginAt,
+          userGoals: user.userGoals,
+          personalizedCourses: user.personalizedCourses
+        }
+      }
+    });
+
+  } catch (error) {
+    console.error("Get profile error:", error);
+    res.status(500).json({
+      status: "error",
+      message: "Internal server error while fetching profile"
+    });
+  }
+});
+// Logout endpoint
+router.post("/logout", authMiddleware, async (req, res) => {
+  try {
+    res.status(200).json({
+      status: "success",
+      message: "Logged out successfully"
+    });
+  } catch (error) {
+    console.error("Logout error:", error);
+    res.status(500).json({
+      status: "error",
+      message: "Internal server error during logout"
+    });
+  }
+});
+export default router;
