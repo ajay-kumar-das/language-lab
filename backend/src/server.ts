@@ -8,6 +8,7 @@ import redisService from "./services/redis.service";
 import authRoutes from "./routes/auth";
 import userRoutes from "./routes/users";
 import vocabularyRoutes from "./routes/vocabulary";
+import dashboardRoutes from "./routes/dashboard";
 import passport from "./config/passport";
 
 dotenv.config();
@@ -34,6 +35,7 @@ app.use(passport.initialize());
 app.use("/api/v1/auth", authRoutes);
 app.use("/api/v1/users", userRoutes);
 app.use("/api/v1/vocabulary", vocabularyRoutes);
+app.use("/api/v1/dashboard", dashboardRoutes);
 
 // Health check endpoints with Redis status
 app.get("/health", async (req, res) => {
