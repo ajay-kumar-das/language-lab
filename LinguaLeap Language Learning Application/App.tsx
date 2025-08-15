@@ -14,17 +14,20 @@ export default function App() {
       <Router>
         <div className="flex h-screen bg-background">
           <Sidebar />
-          <main className="flex-1 overflow-auto">
-            <Routes>
-              <Route path="/" element={<Navigate to="/dashboard" replace />} />
-              <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="/profile" element={<Profile />} />
-              <Route path="/learn" element={<Learn />} />
-              <Route path="/practice" element={<Practice />} />
-              <Route path="/courses" element={<Courses />} />
-              {/* Catch-all route for unmatched paths */}
-              <Route path="*" element={<Navigate to="/dashboard" replace />} />
-            </Routes>
+          <main className="flex-1 overflow-auto min-w-0">
+            {/* Mobile content padding to avoid hamburger menu overlap */}
+            <div className="pt-16 md:pt-0">
+              <Routes>
+                <Route path="/" element={<Navigate to="/dashboard" replace />} />
+                <Route path="/dashboard" element={<Dashboard />} />
+                <Route path="/profile" element={<Profile />} />
+                <Route path="/learn" element={<Learn />} />
+                <Route path="/practice" element={<Practice />} />
+                <Route path="/courses" element={<Courses />} />
+                {/* Catch-all route for unmatched paths */}
+                <Route path="*" element={<Navigate to="/dashboard" replace />} />
+              </Routes>
+            </div>
           </main>
         </div>
       </Router>

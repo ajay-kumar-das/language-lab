@@ -1,0 +1,39 @@
+import React, { useState } from "react";
+import { LoginForm } from "./LoginForm";
+import { RegisterForm } from "./RegisterForm";
+
+interface AuthWrapperProps {
+  onLogin: (credentials: { email: string; password: string }) => Promise<void>;
+  onRegister: (data: { email: string; password: string; confirmPassword: string; name: string }) => Promise<void>;
+  isLoading: boolean;
+  error: string | null;
+}
+
+export const AuthWrapper: React.FC<AuthWrapperProps> = ({
+  onLogin,
+  onRegister,
+  isLoading,
+  error
+}) => {
+  const [isLogin, setIsLogin] = useState(true);
+
+  if (isLogin) {
+    return (
+      <LoginForm
+        onLogin={onLogin}
+        onSwitchToRegister={() => setIsLogin(false)}
+        isLoading={isLoading}
+        error={error}
+      />
+    );
+  }
+
+  return (
+    <RegisterForm
+      onRegister={onRegister}
+      onSwitchToLogin={() => setIsLogin(true)}
+      isLoading={isLoading}
+      error={error}
+    />
+  );
+};

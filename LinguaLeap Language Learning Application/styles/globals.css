@@ -187,3 +187,11 @@
 html {
   font-size: var(--font-size);
 }
+
+/* Mobile touch target utility for better UX */
+@layer utilities {
+  .touch-target {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}

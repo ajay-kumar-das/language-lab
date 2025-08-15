@@ -73,7 +73,7 @@ export function Learn() {
 
   if (isLearning && vocabularyList.length > 0) {
     return (
-      <div className="p-6 max-w-2xl mx-auto">
+      <div className="p-4 md:p-6 max-w-2xl mx-auto">
         <div className="mb-6">
           <Button variant="outline" onClick={handleBack}>
             ← Back to Selection
@@ -90,9 +90,9 @@ export function Learn() {
   }
 
   return (
-    <div className="p-6 max-w-2xl mx-auto space-y-6">
+    <div className="p-4 md:p-6 max-w-2xl mx-auto space-y-4 md:space-y-6">
       <div>
-        <h1 className="text-3xl">Learn Vocabulary</h1>
+        <h1 className="text-2xl md:text-3xl">Learn Vocabulary</h1>
         <p className="text-muted-foreground">Choose a language and topic to start learning</p>
       </div>
 

@@ -1,0 +1,512 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Theme system CSS custom properties */
+:root {
+  /* Core theme colors will be set by ThemeProvider */
+  
+  /* Fallback values */
+  --color-primary: #3b82f6;
+  --color-primary-foreground: #ffffff;
+  --color-background: #ffffff;
+  --color-surface: #f8fafc;
+  --color-text-primary: #0f172a;
+  --color-text-secondary: #475569;
+  --color-border: #e2e8f0;
+  
+  /* Font system */
+  --font-size: 14px;
+  --font-family-primary: Inter, system-ui, -apple-system, sans-serif;
+  
+  /* Spacing system (fallbacks, will be overridden by theme) */
+  --spacing-xs: 0.25rem;
+  --spacing-sm: 0.5rem;
+  --spacing-md: 1rem;
+  --spacing-lg: 1.5rem;
+  --spacing-xl: 2rem;
+  
+  /* Border radius system */
+  --radius-sm: 0.25rem;
+  --radius-md: 0.375rem;
+  --radius-lg: 0.5rem;
+  --radius-xl: 0.75rem;
+  --radius-full: 9999px;
+  
+  /* Animation timings */
+  --animation-fast: 150ms;
+  --animation-normal: 250ms;
+  --animation-slow: 350ms;
+  
+  /* Legacy variables for existing components */
+  --background: var(--color-background);
+  --foreground: var(--color-text-primary);
+  --card: var(--color-surface);
+  --card-foreground: var(--color-text-primary);
+  --popover: var(--color-surface);
+  --popover-foreground: var(--color-text-primary);
+  --primary: var(--color-primary);
+  --primary-foreground: var(--color-primary-foreground);
+  --secondary: var(--color-secondary);
+  --secondary-foreground: var(--color-secondary-foreground);
+  --muted: var(--color-surface);
+  --muted-foreground: var(--color-text-secondary);
+  --accent: var(--color-accent);
+  --accent-foreground: var(--color-accent-foreground);
+  --destructive: var(--color-error);
+  --destructive-foreground: var(--color-error-foreground);
+  --border: var(--color-border);
+  --input: var(--color-surface);
+  --ring: var(--color-interactive-focus);
+  --radius: var(--radius-lg);
+}
+
+/* Dark theme class for Tailwind compatibility */
+.dark {
+  /* Dark theme variables will be set by ThemeProvider */
+}
+
+/* Base layer styles */
+@layer base {
+  * {
+    @apply border-border;
+  }
+  
+  *:focus-visible {
+    @apply outline-none ring-2 ring-offset-2;
+    ring-color: var(--color-interactive-focus);
+  }
+
+  body {
+    background-color: var(--color-background);
+    color: var(--color-text-primary);
+    font-family: var(--font-family-primary);
+    line-height: var(--line-height-normal);
+    transition: background-color var(--animation-normal) ease-in-out,
+                color var(--animation-normal) ease-in-out;
+  }
+
+  /* Ensure smooth transitions for theme changes */
+  *,
+  *::before,
+  *::after {
+    transition-property: background-color, color, border-color, box-shadow;
+    transition-duration: var(--animation-normal);
+    transition-timing-function: ease-in-out;
+  }
+}
+
+/* Component layer for custom utilities */
+@layer components {
+  /* Theme-aware page backgrounds */
+  .page-background {
+    background-color: var(--color-background);
+    color: var(--color-text-primary);
+  }
+  
+  .content-background {
+    background-color: var(--color-surface);
+    color: var(--color-text-primary);
+  }
+  
+  /* Theme-aware button variants */
+  .btn-primary {
+    background-color: var(--color-primary);
+    color: var(--color-primary-foreground);
+    border: 1px solid var(--color-primary);
+  }
+  
+  .btn-primary:hover {
+    background-color: var(--color-primary-hover);
+  }
+  
+  .btn-secondary {
+    background-color: var(--color-secondary);
+    color: var(--color-secondary-foreground);
+    border: 1px solid var(--color-border);
+  }
+  
+  .btn-secondary:hover {
+    background-color: var(--color-secondary-hover);
+  }
+  
+  /* Theme-aware card styles */
+  .card {
+    background-color: var(--color-surface);
+    border: 1px solid var(--color-border-primary);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+    color: var(--color-text-primary);
+  }
+  
+  .card-elevated {
+    box-shadow: var(--shadow-md);
+    border-color: var(--color-border-secondary);
+  }
+  
+  .card-dark {
+    background-color: var(--color-sidebar-surface);
+    border: 1px solid var(--color-sidebar-border);
+    color: var(--color-text-primary);
+  }
+  
+  /* Theme-aware text styles */
+  .text-primary {
+    color: var(--color-text-primary);
+  }
+  
+  .text-secondary {
+    color: var(--color-text-secondary);
+  }
+  
+  .text-muted {
+    color: var(--color-text-muted);
+  }
+  
+  .text-success {
+    color: var(--color-success);
+  }
+  
+  .text-white-theme {
+    color: var(--color-text-primary);
+  }
+  
+  .text-gray-theme {
+    color: var(--color-text-secondary);
+  }
+  
+  /* Additional theme-aware utilities */
+  .border {
+    border-color: var(--color-border-primary);
+  }
+  
+  /* Achievement styling with colorful icons only */
+  .achievement-icon {
+    background: transparent;
+    padding: 0.75rem;
+    border-radius: 0.5rem;
+    transition: all 0.3s ease;
+  }
+  
+  .achievement-icon:hover {
+    transform: scale(1.1);
+  }
+  
+  /* Different colored achievement icons */
+  .achievement-icon-primary {
+    color: #3b82f6; /* Blue */
+  }
+  
+  .achievement-icon-success {
+    color: #10b981; /* Green */
+  }
+  
+  .achievement-icon-warning {
+    color: #f59e0b; /* Orange */
+  }
+  
+  .achievement-icon-purple {
+    color: #8b5cf6; /* Purple */
+  }
+  
+  /* Sidebar specific styles */
+  .sidebar {
+    background-color: var(--color-sidebar-background);
+    color: var(--color-sidebar-foreground);
+    border-right: 1px solid var(--color-sidebar-border);
+  }
+  
+  .sidebar-nav-item {
+    color: var(--color-sidebar-foreground);
+    transition: all var(--animation-normal) ease-in-out;
+  }
+  
+  .sidebar-nav-item:hover {
+    background-color: var(--color-sidebar-accent);
+    color: var(--color-sidebar-accent-foreground);
+  }
+  
+  .sidebar-nav-item.active {
+    background-color: var(--color-sidebar-primary);
+    color: var(--color-sidebar-primary-foreground);
+  }
+  
+  /* Learning-specific styles */
+  .learning-correct {
+    color: var(--color-learning-correct);
+  }
+  
+  .learning-incorrect {
+    color: var(--color-learning-incorrect);
+  }
+  
+  .learning-streak {
+    color: var(--color-learning-streak);
+  }
+  
+  /* Gradient backgrounds */
+  .gradient-primary {
+    background: var(--color-gradients-primary);
+  }
+  
+  .gradient-secondary {
+    background: var(--color-gradients-secondary);
+  }
+  
+  .gradient-accent {
+    background: var(--color-gradients-accent);
+  }
+  
+  .gradient-success {
+    background: var(--color-gradients-success);
+  }
+  
+  .gradient-warning {
+    background: var(--color-gradients-warning);
+  }
+  
+  .gradient-error {
+    background: var(--color-gradients-error);
+  }
+  
+  /* Core app gradients */
+  .gradient-cyan-blue {
+    background: var(--color-gradients-cyanBlue);
+  }
+  
+  /* Color-specific gradients */
+  .gradient-purple {
+    background: var(--color-gradients-purple);
+  }
+  
+  .gradient-blue {
+    background: var(--color-gradients-blue);
+  }
+  
+  .gradient-green {
+    background: var(--color-gradients-green);
+  }
+  
+  .gradient-teal {
+    background: var(--color-gradients-teal);
+  }
+  
+  .gradient-orange {
+    background: var(--color-gradients-orange);
+  }
+  
+  .gradient-red {
+    background: var(--color-gradients-red);
+  }
+  
+  /* Page-specific gradients */
+  .gradient-dashboard {
+    background: var(--color-gradients-dashboard);
+  }
+  
+  .gradient-sidebar {
+    background: var(--color-gradients-sidebar);
+  }
+  
+  .gradient-navigation {
+    background: var(--color-gradients-navigation);
+  }
+  
+  /* Feature-specific gradients */
+  .gradient-learning {
+    background: var(--color-gradients-learning);
+  }
+  
+  .gradient-practice {
+    background: var(--color-gradients-practice);
+  }
+  
+  .gradient-courses {
+    background: var(--color-gradients-courses);
+  }
+  
+  .gradient-vocabulary {
+    background: var(--color-gradients-vocabulary);
+  }
+}
+
+/* Utility layer for custom utilities */
+@layer utilities {
+  /* Animation utilities */
+  .animate-fast {
+    transition-duration: var(--animation-fast);
+  }
+  
+  .animate-normal {
+    transition-duration: var(--animation-normal);
+  }
+  
+  .animate-slow {
+    transition-duration: var(--animation-slow);
+  }
+  
+  /* Theme-aware focus styles */
+  .focus-theme {
+    outline: 2px solid var(--color-interactive-focus);
+    outline-offset: 2px;
+  }
+}
+
+/**
+ * Typography styles
+ * Applied to elements without Tailwind text classes
+ */
+@layer base {
+  :where(:not([class*=" text-"]), :not([class^="text-"])) {
+    h1 {
+      font-size: var(--font-size-xxxxl);
+      font-weight: var(--font-weight-bold);
+      line-height: var(--line-height-tight);
+      color: var(--color-text-primary);
+    }
+
+    h2 {
+      font-size: var(--font-size-xxxl);
+      font-weight: var(--font-weight-semibold);
+      line-height: var(--line-height-tight);
+      color: var(--color-text-primary);
+    }
+
+    h3 {
+      font-size: var(--font-size-xxl);
+      font-weight: var(--font-weight-semibold);
+      line-height: var(--line-height-normal);
+      color: var(--color-text-primary);
+    }
+
+    h4 {
+      font-size: var(--font-size-xl);
+      font-weight: var(--font-weight-medium);
+      line-height: var(--line-height-normal);
+      color: var(--color-text-primary);
+    }
+
+    p {
+      font-size: var(--font-size-base);
+      font-weight: var(--font-weight-normal);
+      line-height: var(--line-height-relaxed);
+      color: var(--color-text-primary);
+    }
+
+    label {
+      font-size: var(--font-size-sm);
+      font-weight: var(--font-weight-medium);
+      line-height: var(--line-height-normal);
+      color: var(--color-text-secondary);
+    }
+
+    button {
+      font-size: var(--font-size-base);
+      font-weight: var(--font-weight-medium);
+      line-height: var(--line-height-normal);
+    }
+
+    input {
+      font-size: var(--font-size-base);
+      font-weight: var(--font-weight-normal);
+      line-height: var(--line-height-normal);
+      color: var(--color-text-primary);
+    }
+  }
+}
+
+/* Set base font size */
+html {
+  font-size: var(--font-size);
+}
+
+/* Scrollbar theming for better integration */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-surface);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: var(--radius-full);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-text-muted);
+}
+/* Dashboard Gradient System */
+
+/* Purple to Blue gradient for header */
+.gradient-dashboard-header {
+  background: var(--color-gradients-primary);
+}
+
+/* Teal gradient for buttons */
+.gradient-teal-button {
+  background: var(--color-gradients-teal);
+}
+
+/* Green circular progress */
+.progress-circle-green {
+  background: conic-gradient(from 0deg, #10b981 0%, #10b981 0%, #e5e7eb 0%, #e5e7eb 100%);}
+
+/* Enhanced gradient system with hover effects */
+.gradient-teal-button:hover {
+  background: var(--color-gradients-teal);
+  transform: translateY(-1px);
+  box-shadow: 0 8px 25px -5px rgba(20, 184, 166, 0.4);
+}
+
+/* Improved dashboard header with better contrast */
+.gradient-dashboard-header {
+  background: var(--color-gradients-primary);
+  position: relative;
+}
+
+.gradient-dashboard-header::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.9) 0%, rgba(59, 130, 246, 0.8) 100%);
+  backdrop-filter: blur(10px);
+}
+
+.gradient-dashboard-header > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* Accessibility improvements */
+.progress-circle-container {
+  transition: transform 0.2s ease;
+}
+
+.progress-circle-container:hover {
+  transform: scale(1.05);
+}
+
+/* Focus visible states for better accessibility */
+.dashboard-card:focus-within {
+  ring: 2px solid #3b82f6;
+  ring-offset: 2px;
+}
+
+/* Mobile optimizations */
+@media (max-width: 768px) {
+  .gradient-dashboard-header {
+    padding: 1.5rem !important;
+  }
+  
+  .dashboard-badges {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+}

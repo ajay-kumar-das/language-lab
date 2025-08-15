@@ -1,0 +1,123 @@
+import React from 'react';
+import { Link } from 'react-router-dom';
+import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
+import { Button } from './ui/button';
+import { Sparkles, Calendar, Clock, Target } from 'lucide-react';
+import { useUser } from './UserContext';
+
+export function Dashboard() {
+  const { user } = useUser();
+  
+  // Calculate progress for today's goal (0/10 words learned today)
+  const todayWordsGoal = 10;
+  const todayWordsLearned = 0;
+  const progressPercentage = Math.round((todayWordsLearned / todayWordsGoal) * 100);
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {/* Header Section with Gradient Background */}
+      <div className="gradient-dashboard-header text-white px-6 py-8 md:px-8 md:py-12">
+        <div className="max-w-6xl mx-auto">
+          <div className="flex items-center gap-3 mb-4">
+            <Sparkles className="h-6 w-6 text-yellow-300" />
+            <h1 className="text-2xl md:text-4xl font-bold">
+              Welcome back, {user.name}!
+            </h1>
+          </div>
+          
+          <p className="text-white/90 text-base md:text-lg mb-6">
+            Ready to continue your language learning journey?
+          </p>
+          
+          {/* Progress Badges */}
+          <div className="flex gap-4 flex-wrap dashboard-badges">
+            <div className="flex items-center gap-2 bg-white/20 backdrop-blur-sm rounded-full px-4 py-2">
+              <Calendar className="h-4 w-4" />
+              <span className="text-sm font-medium">Day {user.dailyStreak}</span>
+            </div>
+            <div className="flex items-center gap-2 bg-white/20 backdrop-blur-sm rounded-full px-4 py-2">
+              <Clock className="h-4 w-4" />
+              <span className="text-sm font-medium">Level 1</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Warning Message */}
+      <div className="px-6 py-4 md:px-8">
+        <div className="max-w-6xl mx-auto">
+          <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 flex items-center justify-between">
+            <div>
+              <h3 className="font-medium text-amber-800">Limited Dashboard Features</h3>
+              <p className="text-sm text-amber-700">
+                Some dashboard data is unavailable. Backend connection required for full functionality.
+              </p>
+            </div>
+            <Button variant="outline" size="sm" className="border-amber-300 text-amber-700 hover:bg-amber-100">
+              Retry
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      {/* Today's Goal Section */}
+      <div className="px-6 pb-8 md:px-8">
+        <div className="max-w-6xl mx-auto">
+          <Card className="border-0 shadow-lg dashboard-card">
+            <CardContent className="p-6 md:p-8">
+              <div className="flex items-start gap-6">
+                {/* Circular Progress Indicator */}
+                <div className="relative progress-circle-container" role="img" aria-label="Progress: 0% complete">
+                  <div className="w-16 h-16 md:w-20 md:h-20 rounded-full bg-green-100 flex items-center justify-center relative overflow-hidden">
+                    <div 
+                      className="absolute inset-0 rounded-full"
+                      style={{
+                        background: `conic-gradient(from 0deg, #10b981 0%, #10b981 ${progressPercentage * 3.6}deg, #e5e7eb ${progressPercentage * 3.6}deg, #e5e7eb 360deg)`
+                      }}
+                    />
+                    <div className="w-12 h-12 md:w-14 md:h-14 bg-white rounded-full flex items-center justify-center relative z-10">
+                      <Target className="h-5 w-5 md:h-6 md:w-6 text-green-600" />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Goal Content */}
+                <div className="flex-1">
+                  <div className="flex items-center justify-between mb-2">
+                    <h2 className="text-xl md:text-2xl font-bold text-gray-900">
+                      Today's Goal
+                    </h2>
+                    <span className="text-2xl md:text-3xl font-bold text-green-600">
+                      {progressPercentage}% Complete
+                    </span>
+                  </div>
+                  
+                  <div className="flex items-center justify-between mb-4">
+                    <p className="text-gray-700 font-medium">Learn 10 new words</p>
+                    <span className="text-sm font-medium text-green-600">
+                      {todayWordsLearned}/{todayWordsGoal}
+                    </span>
+                  </div>
+                  
+                  <p className="text-gray-600 mb-6">
+                    Continue building your vocabulary and reach your daily goal!
+                  </p>
+                  
+                  <Link to="/learn" className="inline-block">
+                    <Button 
+                      className="gradient-teal-button hover:shadow-lg border-0 text-white px-8 py-3 rounded-xl font-medium text-base transition-all duration-300"
+                      size="lg"
+                    >
+                      <Sparkles className="h-4 w-4 mr-2" />
+                      Start Learning
+                    </Button>
+                  </Link>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    </div>
+  );
+}

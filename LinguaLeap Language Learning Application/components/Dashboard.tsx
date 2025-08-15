@@ -9,13 +9,13 @@ export function Dashboard() {
   const { user } = useUser();
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-4 md:p-6 space-y-4 md:space-y-6">
       <div>
-        <h1 className="text-3xl">Welcome back, {user.name}!</h1>
+        <h1 className="text-2xl md:text-3xl">Welcome back, {user.name}!</h1>
         <p className="text-muted-foreground">Ready to continue your language learning journey?</p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm">Daily Streak</CardTitle>
@@ -90,7 +90,7 @@ export function Dashboard() {
             Continue building your vocabulary with 10 new words today!
           </p>
           <Link to="/learn">
-            <Button className="w-full">Start Learning</Button>
+            <Button className="w-full touch-target">Start Learning</Button>
           </Link>
         </CardContent>
       </Card>

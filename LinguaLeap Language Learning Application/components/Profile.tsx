@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   Card,
   CardContent,
@@ -14,7 +14,8 @@ import {
   SelectValue,
 } from "./ui/select";
 import { Button } from "./ui/button";
-import { useUser } from "./UserContext";
+import { Input } from "./ui/input";
+import { useUser } from "./UserContext"; // Keep using UserContext for now as it has the language preferences
 import { toast } from "sonner@2.0.3";
 
 const languages = [
@@ -34,16 +35,26 @@ const languages = [
 
 export function Profile() {
   const { user, updateUser } = useUser();
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleSave = () => {
-    toast.success("Profile updated successfully!");
+  const handleSave = async () => {
+    setIsLoading(true);
+    try {
+      // Simulate API call delay
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      toast.success("Profile updated successfully!");
+    } catch (error) {
+      toast.error("Failed to update profile. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
-    <div className="p-6 max-w-2xl mx-auto space-y-6">
+    <div className="p-4 md:p-6 max-w-2xl mx-auto space-y-6">
       <div>
-        <h1 className="text-3xl">Profile Settings</h1>
-        <p className="text-muted-foreground">
+        <h1 className="text-2xl md:text-3xl">Profile Settings</h1>
+        <p className="text-muted-foreground text-sm md:text-base">
           Customize your learning experience
         </p>
       </div>
@@ -117,8 +128,12 @@ export function Profile() {
             </Select>
           </div>
 
-          <Button onClick={handleSave} className="w-full">
-            Save Changes
+          <Button 
+            onClick={handleSave} 
+            className="w-full touch-target" 
+            disabled={isLoading}
+          >
+            {isLoading ? "Saving..." : "Save Changes"}
           </Button>
         </CardContent>
       </Card>
@@ -139,6 +154,27 @@ export function Profile() {
             <p className="text-sm text-muted-foreground">
               {user.email}
             </p>
+          </div>
+          <div className="space-y-2">
+            <Label>Learning Progress</Label>
+            <div className="grid grid-cols-2 gap-4 text-sm">
+              <div>
+                <p className="text-muted-foreground">Daily Streak</p>
+                <p className="font-medium">{user.dailyStreak} days</p>
+              </div>
+              <div>
+                <p className="text-muted-foreground">Words Learned</p>
+                <p className="font-medium">{user.wordsLearned}</p>
+              </div>
+              <div>
+                <p className="text-muted-foreground">XP Points</p>
+                <p className="font-medium">{user.xpPoints.toLocaleString()}</p>
+              </div>
+              <div>
+                <p className="text-muted-foreground">Completed Courses</p>
+                <p className="font-medium">{user.completedCourses.length}</p>
+              </div>
+            </div>
           </div>
         </CardContent>
       </Card>

@@ -1,0 +1,213 @@
+// API Response Types
+export interface ApiResponse<T = any> {
+  status: "success" | "error";
+  message?: string;
+  data?: T;
+  errors?: string[];
+}
+
+// User Types
+export interface User {
+  id: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  username: string;
+  nativeLanguage: string;
+  targetLanguages: string[];
+  level: "beginner" | "intermediate" | "advanced";
+  profilePicture?: string;
+  bio?: string;
+  preferences?: UserPreferences;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface UserPreferences {
+  dailyGoal: number;
+  reminderTime?: string;
+  theme?: "light" | "dark" | "system";
+  soundEnabled: boolean;
+  notificationsEnabled: boolean;
+  privacySettings: {
+    profileVisibility: "public" | "private";
+    showProgress: boolean;
+  };
+}
+
+export interface UserStats {
+  totalXP: number;
+  currentStreak: number;
+  longestStreak: number;
+  wordsLearned: number;
+  lessonsCompleted: number;
+  coursesEnrolled: number;
+  timeSpent: number; // in minutes
+  achievements: Achievement[];
+}
+
+export interface Achievement {
+  id: string;
+  name: string;
+  description: string;
+  icon: string;
+  unlockedAt: string;
+}
+
+export interface UserGoals {
+  id: string;
+  userId: string;
+  dailyXPGoal: number;
+  weeklyGoal: number;
+  currentWeekProgress: number;
+  targetLanguage: string;
+  completionDate?: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// Authentication Types
+export interface LoginRequest {
+  email: string;
+  password: string;
+  rememberMe?: boolean;
+}
+
+export interface LoginResponse {
+  user: { id: string; email: string; username: string; firstName: string; lastName: string; lastLoginAt: string; };
+  token: string;
+}
+
+export interface RegisterRequest {
+  firstName: string;
+  lastName: string;
+  username: string;
+  email: string;
+  password: string;
+  nativeLanguage: string;
+  targetLanguages: string[];
+  level: "beginner" | "intermediate" | "advanced";
+}
+
+export interface RegisterResponse {
+  user: { id: string; email: string; username: string; firstName: string; lastName: string; };
+  token: string;
+}
+
+export interface RefreshTokenRequest {
+  refreshToken: string;
+}
+
+export interface RefreshTokenResponse {
+  token: string;
+  refreshToken: string;
+  expiresIn: number;
+}
+
+// Profile Update Types
+export interface UpdateProfileRequest {
+  name?: string;
+  bio?: string;
+  profilePicture?: string;
+}
+
+export interface UpdateLanguageSettingsRequest {
+  nativeLanguage?: string;
+  targetLanguages?: string[];
+  level?: "beginner" | "intermediate" | "advanced";
+}
+
+export interface UpdatePreferencesRequest {
+  dailyGoal?: number;
+  reminderTime?: string;
+  theme?: "light" | "dark" | "system";
+  soundEnabled?: boolean;
+  notificationsEnabled?: boolean;
+  privacySettings?: {
+    profileVisibility?: "public" | "private";
+    showProgress?: boolean;
+  };
+}
+
+export interface CreateGoalRequest {
+  dailyXPGoal: number;
+  weeklyGoal: number;
+  targetLanguage: string;
+}
+
+export interface UpdateXPRequest {
+  amount: number;
+  source: string;
+  activityType: string;
+}
+
+// Error Types
+export interface ApiError {
+  message: string;
+  code?: string;
+  details?: any;
+  field?: string;
+}
+
+export interface ValidationError {
+  field: string;
+  message: string;
+  code: string;
+}
+
+// HTTP Status Codes
+export enum HttpStatus {
+  OK = 200,
+  CREATED = 201,
+  BAD_REQUEST = 400,
+  UNAUTHORIZED = 401,
+  FORBIDDEN = 403,
+  NOT_FOUND = 404,
+  CONFLICT = 409,
+  UNPROCESSABLE_ENTITY = 422,
+  INTERNAL_SERVER_ERROR = 500,
+  SERVICE_UNAVAILABLE = 503
+}
+
+// API Endpoints
+export const API_ENDPOINTS = {
+  // Authentication
+  AUTH: {
+    LOGIN: "/v1/auth/login",
+    REGISTER: "/v1/auth/register",
+    REFRESH: "/v1/auth/refresh",
+    LOGOUT: "/v1/auth/logout",
+    ME: "/v1/auth/me",
+  },
+  // Users
+  USERS: {
+    PROFILE: "/v1/users/profile",
+    LANGUAGE_SETTINGS: "/v1/users/language-settings",
+    PREFERENCES: "/v1/users/preferences",
+    GOALS: "/v1/users/goals",
+    STATS: "/v1/users/stats",
+    XP: "/v1/users/xp",
+  }
+} as const;
+
+// Language Support Types
+export interface SupportedLanguage {
+  code: string;
+  name: string;
+  nativeName: string;
+  flag: string;
+  enabled: boolean;
+}
+
+// Supported Languages Configuration
+export const SUPPORTED_LANGUAGES: SupportedLanguage[] = [
+  { code: "en", name: "English", nativeName: "English", flag: "🇺🇸", enabled: true },
+  { code: "es", name: "Spanish", nativeName: "Español", flag: "🇪🇸", enabled: true },
+  { code: "fr", name: "French", nativeName: "Français", flag: "🇫🇷", enabled: true },
+  { code: "de", name: "German", nativeName: "Deutsch", flag: "🇩🇪", enabled: true },
+  { code: "it", name: "Italian", nativeName: "Italiano", flag: "🇮🇹", enabled: true },
+  { code: "pt", name: "Portuguese", nativeName: "Português", flag: "🇵🇹", enabled: true },
+  { code: "zh", name: "Chinese", nativeName: "中文", flag: "🇨🇳", enabled: true },
+  { code: "ja", name: "Japanese", nativeName: "日本語", flag: "🇯🇵", enabled: true },
+];

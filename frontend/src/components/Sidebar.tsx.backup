@@ -1,0 +1,176 @@
+import React, { useState } from "react";
+import { Link, useLocation } from "react-router-dom";
+import { Home, User, BookOpen, MessageSquare, GraduationCap, Languages, LogOut, Moon, Sun, Settings, Monitor } from "lucide-react";
+import { cn } from "./ui/utils";
+import { Button } from "./ui/button";
+import { useTheme } from "../hooks/useTheme";
+
+interface SidebarProps {
+  user?: any;
+  onLogout?: () => void;
+}
+
+const navigation = [
+  { name: "Dashboard", href: "/dashboard", icon: Home },
+  { name: "Learn", href: "/learn", icon: BookOpen },
+  { name: "Practice", href: "/practice", icon: MessageSquare },
+  { name: "Courses", href: "/courses", icon: GraduationCap },
+  { name: "Profile", href: "/profile", icon: User },
+];
+
+export function Sidebar({ user, onLogout }: SidebarProps) {
+  const location = useLocation();
+  const { theme, mode, setMode, toggleTheme, isDark } = useTheme();
+
+  // Get the appropriate icon for current theme mode
+  const getThemeIcon = () => {
+    switch (mode) {
+      case "light":
+        return Sun;
+      case "dark":
+        return Moon;
+      case "system":
+        return Monitor;
+      default:
+        return Sun;
+    }
+  };
+
+  const ThemeIcon = getThemeIcon();
+
+  // Cycle through theme modes: light -> dark -> system -> light
+  const cycleTheme = () => {
+    switch (mode) {
+      case "light":
+        setMode("dark");
+        break;
+      case "dark":
+        setMode("system");
+        break;
+      case "system":
+        setMode("light");
+        break;
+      default:
+        setMode("light");
+    }
+  };
+
+  return (
+    <div className="sidebar flex flex-col w-64 h-full">
+      {/* Header with Logo */}
+      <div className="flex items-center gap-3 p-6 border-b border-sidebar-border">
+        <div 
+          className="w-10 h-10 rounded-lg flex items-center justify-center"
+          style={{ backgroundColor: theme.colors.primary }}
+        >
+          <Languages className="h-6 w-6 text-white" />
+        </div>
+        <h1 className="text-xl font-semibold" style={{ color: theme.colors.sidebar.foreground }}>
+          LinguaLeap
+        </h1>
+      </div>
+      
+      {/* User Profile Section */}
+      {user && (
+        <div className="p-4 border-b border-sidebar-border">
+          <div className="flex items-center gap-3">
+            <div 
+              className="w-10 h-10 rounded-full flex items-center justify-center"
+              style={{ backgroundColor: theme.colors.sidebar.accent }}
+            >
+              <User 
+                className="h-5 w-5"
+                style={{ color: theme.colors.sidebar.accentForeground }}
+              />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p 
+                className="text-sm font-medium truncate"
+                style={{ color: theme.colors.sidebar.foreground }}
+              >
+                {user.name}
+              </p>
+              <p 
+                className="text-xs truncate"
+                style={{ color: theme.colors.text.muted }}
+              >
+                {user.email}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Navigation */}
+      <nav className="flex-1 px-4 py-6 space-y-1">
+        {navigation.map((item) => {
+          const isActive = location.pathname === item.href;
+          return (
+            <Link
+              key={item.name}
+              to={item.href}
+              className={cn(
+                "sidebar-nav-item flex items-center gap-3 px-3 py-3 rounded-lg transition-all duration-200 text-sm font-medium",
+                isActive ? "active" : ""
+              )}
+            >
+              <item.icon className="h-5 w-5" />
+              {item.name}
+            </Link>
+          );
+        })}
+      </nav>
+
+      {/* Theme Selector and Footer */}
+      <div className="p-4 border-t border-sidebar-border space-y-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Settings 
+              className="h-4 w-4" 
+              style={{ color: theme.colors.text.muted }}
+            />
+            <span 
+              className="text-sm"
+              style={{ color: theme.colors.text.muted }}
+            >
+              Theme: {mode}
+            </span>
+          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={cycleTheme}
+            className="h-8 w-8 p-0 hover:bg-sidebar-accent"
+            style={{ 
+              color: theme.colors.sidebar.foreground,
+              hover: { backgroundColor: theme.colors.sidebar.accent }
+            }}
+            title={`Current: ${mode}. Click to cycle through themes.`}
+          >
+            <ThemeIcon className="h-4 w-4" />
+          </Button>
+        </div>
+        
+        {/* Learning motivation */}
+        <div 
+          className="text-xs"
+          style={{ color: theme.colors.text.muted }}
+        >
+          Keep learning <br />
+          every day! 🚀
+        </div>
+
+        {/* Logout Button */}
+        {user && onLogout && (
+          <button
+            onClick={onLogout}
+            className="sidebar-nav-item flex items-center gap-3 w-full px-3 py-2 rounded-lg transition-colors text-sm"
+          >
+            <LogOut className="h-4 w-4" />
+            Sign Out
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}

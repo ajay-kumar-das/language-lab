@@ -7,7 +7,8 @@ import { Plus, BookOpen, MessageSquare, Lock, CheckCircle, DollarSign, Gift, Pla
 import { CreateCourseDialog } from './CreateCourseDialog';
 import { Link } from 'react-router-dom';
 import { useUser } from './UserContext';
-import { toast } from 'sonner@2.0.3';
+import { useLanguage } from '../../../frontend/src/components/LanguageProvider';
+import { toast } from 'sonner';
 
 interface CourseTask {
   id: string;
@@ -157,22 +158,22 @@ export function Courses() {
 
   const getTierColor = (tier: string) => {
     switch (tier) {
-      case 'basic': return 'bg-gray-500';
-      case 'premium': return 'bg-blue-500';
-      case 'pro': return 'bg-purple-500';
-      default: return 'bg-gray-500';
+      case 'basic': return 'content-background';
+      case 'premium': return 'gradient-primary';
+      case 'pro': return 'gradient-purple';
+      default: return 'content-background';
     }
   };
 
   if (selectedCourse) {
     return (
-      <div className="p-6 max-w-4xl mx-auto space-y-6">
+      <div className="p-4 md:p-6 max-w-4xl mx-auto space-y-4 md:space-y-6 page-background min-h-screen">
         <div className="flex items-center justify-between">
           <Button variant="outline" onClick={() => setSelectedCourse(null)}>
             ← Back to Courses
           </Button>
           {selectedCourse.isCompleted && (
-            <div className="flex items-center gap-2 text-green-600">
+            <div className="flex items-center gap-2 text-success">
               <Gift className="h-5 w-5" />
               <span className="text-sm">Completed - Earned ${selectedCourse.completionReward.toFixed(2)}</span>
             </div>
@@ -182,25 +183,25 @@ export function Courses() {
         <div className="space-y-6">
           <div className="flex items-start justify-between">
             <div>
-              <h1 className="text-3xl">{selectedCourse.title}</h1>
-              <p className="text-muted-foreground">{selectedCourse.description}</p>
+              <h1 className="text-3xl font-bold text-primary">{selectedCourse.title}</h1>
+              <p className="text-secondary">{selectedCourse.description}</p>
             </div>
             <div className="text-right">
               <Badge className={getTierColor(selectedCourse.tier)}>
                 {selectedCourse.tier.toUpperCase()}
               </Badge>
-              <p className="text-sm text-muted-foreground mt-1">
+              <p className="text-sm text-secondary mt-1">
                 ${selectedCourse.price.toFixed(2)}
               </p>
             </div>
           </div>
 
-          <Card>
+          <Card className="card">
             <CardHeader>
               <CardTitle className="flex items-center justify-between">
                 <span>Progress</span>
                 {selectedCourse.isCompleted && (
-                  <Badge variant="outline" className="text-green-600">
+                  <Badge variant="outline" className="text-success">
                     <Gift className="h-3 w-3 mr-1" />
                     Reward Earned: ${selectedCourse.completionReward.toFixed(2)}
                   </Badge>
@@ -220,14 +221,14 @@ export function Courses() {
 
           <div className="grid gap-4">
             {selectedCourse.tasks.map((task, index) => (
-              <Card key={task.id} className={task.isCurrent ? 'ring-2 ring-primary' : ''}>
+              <Card key={task.id} className={`card ${task.isCurrent ? 'ring-2 ring-primary' : ''}`}>
                 <CardContent className="flex items-center justify-between p-6">
                   <div className="flex items-center gap-4">
-                    <div className="flex items-center justify-center w-10 h-10 rounded-full bg-muted">
+                    <div className="flex items-center justify-center w-10 h-10 rounded-full content-background">
                       {task.isCompleted ? (
-                        <CheckCircle className="h-5 w-5 text-green-500" />
+                        <CheckCircle className="h-5 w-5 text-success" />
                       ) : task.isLocked ? (
-                        <Lock className="h-5 w-5 text-muted-foreground" />
+                        <Lock className="h-5 w-5 text-secondary" />
                       ) : task.type === 'vocabulary' ? (
                         <BookOpen className="h-5 w-5" />
                       ) : (
@@ -241,7 +242,7 @@ export function Courses() {
                           {task.type === 'vocabulary' ? 'Vocabulary' : 'Conversation'}
                         </Badge>
                         {task.isCurrent && <Badge variant="outline">Current</Badge>}
-                        {task.isCompleted && <Badge variant="outline" className="text-green-600">Completed</Badge>}
+                        {task.isCompleted && <Badge variant="outline" className="text-success">Completed</Badge>}
                       </div>
                     </div>
                   </div>
@@ -263,11 +264,16 @@ export function Courses() {
   }
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-4 md:p-6 space-y-4 md:space-y-6 page-background min-h-screen">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl">My Courses</h1>
-          <p className="text-muted-foreground">Structured learning paths tailored to your goals</p>
+          <h1 className="text-3xl font-bold text-primary flex items-center gap-3">
+            <div className="gradient-courses p-2 rounded-xl">
+              <GraduationCap className="h-8 w-8 text-white" />
+            </div>
+            My Courses
+          </h1>
+          <p className="text-secondary">Structured learning paths tailored to your goals</p>
         </div>
         <Button onClick={() => setShowCreateDialog(true)}>
           <Plus className="h-4 w-4 mr-2" />
@@ -277,7 +283,7 @@ export function Courses() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {courses.map((course) => (
-          <Card key={course.id} className="cursor-pointer hover:shadow-lg transition-shadow">
+          <Card key={course.id} className="card cursor-pointer hover:card-elevated transition-shadow">
             <CardHeader onClick={() => setSelectedCourse(course)}>
               <CardTitle className="flex items-center justify-between">
                 <span className="flex-1">{course.title}</span>
@@ -290,7 +296,7 @@ export function Courses() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4" onClick={() => setSelectedCourse(course)}>
-              <p className="text-sm text-muted-foreground">{course.description}</p>
+              <p className="text-sm text-secondary">{course.description}</p>
               
               <div className="flex items-center justify-between text-sm">
                 <div className="flex items-center gap-1">
@@ -298,7 +304,7 @@ export function Courses() {
                   <span>${course.price.toFixed(2)}</span>
                 </div>
                 {course.isCompleted && (
-                  <div className="flex items-center gap-1 text-green-600">
+                  <div className="flex items-center gap-1 text-success">
                     <Gift className="h-3 w-3" />
                     <span>+${course.completionReward.toFixed(2)}</span>
                   </div>
