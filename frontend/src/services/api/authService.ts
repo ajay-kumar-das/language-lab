@@ -100,6 +100,62 @@ class AuthApiService {
       return false;
     }
   }
+
+  /**
+   * Send password reset email
+   */
+  async forgotPassword(email: string): Promise<void> {
+    const response = await apiClient.post<{message: string}>(
+      API_ENDPOINTS.AUTH.FORGOT_PASSWORD,
+      { email }
+    );
+    
+    if (response.status !== "success") {
+      throw new Error(response.message || "Failed to send password reset email");
+    }
+  }
+
+  /**
+   * Reset password with token
+   */
+  async resetPassword(token: string, password: string): Promise<void> {
+    const response = await apiClient.post<{message: string}>(
+      API_ENDPOINTS.AUTH.RESET_PASSWORD,
+      { token, password }
+    );
+    
+    if (response.status !== "success") {
+      throw new Error(response.message || "Failed to reset password");
+    }
+  }
+
+  /**
+   * Verify email with token
+   */
+  async verifyEmail(token: string): Promise<void> {
+    const response = await apiClient.post<{message: string}>(
+      API_ENDPOINTS.AUTH.VERIFY_EMAIL,
+      { token }
+    );
+    
+    if (response.status !== "success") {
+      throw new Error(response.message || "Failed to verify email");
+    }
+  }
+
+  /**
+   * Resend email verification
+   */
+  async resendVerification(email: string): Promise<void> {
+    const response = await apiClient.post<{message: string}>(
+      API_ENDPOINTS.AUTH.RESEND_VERIFICATION,
+      { email }
+    );
+    
+    if (response.status !== "success") {
+      throw new Error(response.message || "Failed to resend verification email");
+    }
+  }
 }
 
 // Export singleton instance

@@ -6,6 +6,7 @@ import { AuthLanguageSelector } from "./AuthLanguageSelector";
 interface LoginFormProps {
   onLogin: (credentials: { email: string; password: string }) => Promise<void>;
   onSwitchToRegister: () => void;
+  onForgotPassword?: () => void;
   isLoading: boolean;
   error: string | null;
   clearError?: () => void;
@@ -14,6 +15,7 @@ interface LoginFormProps {
 export const LoginForm: React.FC<LoginFormProps> = ({
   onLogin,
   onSwitchToRegister,
+  onForgotPassword,
   isLoading,
   error,
   clearError
@@ -158,6 +160,18 @@ export const LoginForm: React.FC<LoginFormProps> = ({
                       </button>
                     </div>
                   </div>
+
+                  {onForgotPassword && (
+                    <div className="text-right">
+                      <button
+                        type="button"
+                        onClick={onForgotPassword}
+                        className="text-sm text-cyan-400 hover:text-cyan-300 transition-colors"
+                      >
+                        Forgot your password?
+                      </button>
+                    </div>
+                  )}
 
                   <button
                     type="submit"

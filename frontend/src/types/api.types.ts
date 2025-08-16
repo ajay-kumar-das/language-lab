@@ -168,6 +168,10 @@ export const API_ENDPOINTS = {
     REFRESH: "/v1/auth/refresh",
     LOGOUT: "/v1/auth/logout",
     ME: "/v1/auth/me",
+    FORGOT_PASSWORD: "/v1/auth/forgot-password",
+    RESET_PASSWORD: "/v1/auth/reset-password",
+    VERIFY_EMAIL: "/v1/auth/verify-email",
+    RESEND_VERIFICATION: "/v1/auth/resend-verification",
   },
   // Users
   USERS: {

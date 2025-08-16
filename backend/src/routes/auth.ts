@@ -6,6 +6,8 @@ import { authMiddleware, TokenManager } from "../middleware/auth";
 import redisService from "../services/redis.service";
 import { userCache, invalidateCache } from "../middleware/cache.middleware";
 import passport from "../config/passport";
+import emailService from "../services/email.service";
+import crypto from "crypto";
 
 const router = express.Router();
 const prisma = new PrismaClient();
@@ -43,6 +45,7 @@ router.post("/register", invalidateCache(["user:*", "stats:*"]), async (req, res
 
     const saltRounds = parseInt(process.env.BCRYPT_ROUNDS || "12");
     const hashedPassword = await bcrypt.hash(password, saltRounds);
+    const verificationToken = crypto.randomBytes(32).toString('hex');
 
     const user = await prisma.user.create({
       data: {
@@ -52,9 +55,16 @@ router.post("/register", invalidateCache(["user:*", "stats:*"]), async (req, res
         password: hashedPassword,
         targetLanguage: "Spanish", // Default target language
         nativeLanguage: nativeLanguage || "English",
-        appLanguage: appLanguage || "English"
+        appLanguage: appLanguage || "English",
+        verificationToken,
+        isVerified: false
       }
     });
+
+    // Send verification email
+    if (emailService.isReady()) {
+      await emailService.sendVerificationEmail(user.email, verificationToken, user.firstName);
+    }
 
     const token = jwt.sign(
       {
@@ -477,5 +487,252 @@ router.get("/google/callback", (req, res, next) => {
     }
   }
 );
+
+// Email verification endpoint
+router.post("/verify-email", async (req, res) => {
+  try {
+    const { token } = req.body;
+
+    if (!token) {
+      return res.status(400).json({
+        status: "error",
+        message: "Verification token is required"
+      });
+    }
+
+    const user = await prisma.user.findFirst({
+      where: { verificationToken: token }
+    });
+
+    if (!user) {
+      return res.status(400).json({
+        status: "error",
+        message: "Invalid or expired verification token"
+      });
+    }
+
+    if (user.isVerified) {
+      return res.status(400).json({
+        status: "error",
+        message: "Email is already verified"
+      });
+    }
+
+    await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        isVerified: true,
+        verificationToken: null
+      }
+    });
+
+    // Invalidate user cache
+    if (redisService.isHealthy()) {
+      await redisService.invalidateUserCache(user.id);
+    }
+
+    res.status(200).json({
+      status: "success",
+      message: "Email verified successfully"
+    });
+
+  } catch (error) {
+    console.error("Email verification error:", error);
+    res.status(500).json({
+      status: "error",
+      message: "Internal server error during email verification"
+    });
+  }
+});
+
+// Resend verification email endpoint
+router.post("/resend-verification", async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({
+        status: "error",
+        message: "Email is required"
+      });
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { email: email.toLowerCase() }
+    });
+
+    if (!user) {
+      return res.status(404).json({
+        status: "error",
+        message: "User not found"
+      });
+    }
+
+    if (user.isVerified) {
+      return res.status(400).json({
+        status: "error",
+        message: "Email is already verified"
+      });
+    }
+
+    const verificationToken = crypto.randomBytes(32).toString('hex');
+
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { verificationToken }
+    });
+
+    // Send verification email
+    if (emailService.isReady()) {
+      await emailService.sendVerificationEmail(user.email, verificationToken, user.firstName);
+    }
+
+    res.status(200).json({
+      status: "success",
+      message: "Verification email sent successfully"
+    });
+
+  } catch (error) {
+    console.error("Resend verification error:", error);
+    res.status(500).json({
+      status: "error",
+      message: "Internal server error while resending verification email"
+    });
+  }
+});
+
+// Forgot password endpoint
+router.post("/forgot-password", async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({
+        status: "error",
+        message: "Email is required"
+      });
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { email: email.toLowerCase() }
+    });
+
+    if (!user) {
+      // Return success even if user doesn't exist for security
+      return res.status(200).json({
+        status: "success",
+        message: "If an account with that email exists, a password reset link has been sent"
+      });
+    }
+
+    // Check if user has a Google account (no password)
+    if (user.googleId && !user.password) {
+      return res.status(400).json({
+        status: "error",
+        message: "This account is linked to Google. Please use Google Sign-In."
+      });
+    }
+
+    const resetToken = crypto.randomBytes(32).toString('hex');
+    const resetExpires = new Date(Date.now() + 3600000); // 1 hour from now
+
+    await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        passwordResetToken: resetToken,
+        passwordResetExpires: resetExpires
+      }
+    });
+
+    // Send password reset email
+    if (emailService.isReady()) {
+      await emailService.sendPasswordResetEmail(user.email, resetToken, user.firstName);
+    }
+
+    res.status(200).json({
+      status: "success",
+      message: "If an account with that email exists, a password reset link has been sent"
+    });
+
+  } catch (error) {
+    console.error("Forgot password error:", error);
+    res.status(500).json({
+      status: "error",
+      message: "Internal server error during password reset request"
+    });
+  }
+});
+
+// Reset password endpoint
+router.post("/reset-password", async (req, res) => {
+  try {
+    const { token, password } = req.body;
+
+    if (!token || !password) {
+      return res.status(400).json({
+        status: "error",
+        message: "Token and new password are required"
+      });
+    }
+
+    if (password.length < 6) {
+      return res.status(400).json({
+        status: "error",
+        message: "Password must be at least 6 characters long"
+      });
+    }
+
+    const user = await prisma.user.findFirst({
+      where: {
+        passwordResetToken: token,
+        passwordResetExpires: {
+          gt: new Date()
+        }
+      }
+    });
+
+    if (!user) {
+      return res.status(400).json({
+        status: "error",
+        message: "Invalid or expired reset token"
+      });
+    }
+
+    const saltRounds = parseInt(process.env.BCRYPT_ROUNDS || "12");
+    const hashedPassword = await bcrypt.hash(password, saltRounds);
+
+    await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        password: hashedPassword,
+        passwordResetToken: null,
+        passwordResetExpires: null
+      }
+    });
+
+    // Invalidate all user sessions for security
+    if (redisService.isHealthy()) {
+      await TokenManager.invalidateUserSessions(user.id);
+      await redisService.invalidateUserCache(user.id);
+    }
+
+    // Send confirmation email
+    if (emailService.isReady()) {
+      await emailService.sendPasswordResetConfirmation(user.email, user.firstName);
+    }
+
+    res.status(200).json({
+      status: "success",
+      message: "Password reset successfully"
+    });
+
+  } catch (error) {
+    console.error("Reset password error:", error);
+    res.status(500).json({
+      status: "error",
+      message: "Internal server error during password reset"
+    });
+  }
+});
 
 export default router;
