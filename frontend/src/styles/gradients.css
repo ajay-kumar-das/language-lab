@@ -1,0 +1,215 @@
+/* LinguaLeap Gradient Design System */
+
+/* Primary Gradients - Based on UI Mockups */
+:root {
+  /* Authentication Gradients */
+  --gradient-login-primary: linear-gradient(135deg, #7c3aed 0%, #5b21b6 100%); /* Purple gradient for login */
+  --gradient-signup-primary: linear-gradient(135deg, #14b8a6 0%, #0891b2 100%); /* Teal gradient for signup */
+  
+  /* Dashboard Gradients */
+  --gradient-dashboard-header: linear-gradient(135deg, #7c3aed 0%, #6366f1 50%, #3b82f6 100%); /* Purple to indigo to blue */
+  --gradient-dashboard-welcome: linear-gradient(135deg, #a855f7 0%, #7c3aed 100%); /* Light purple to purple */
+  
+  /* Practice Interface Gradients */
+  --gradient-practice-header: linear-gradient(135deg, #14b8a6 0%, #0891b2 50%, #0284c7 100%); /* Teal to sky blue */
+  --gradient-practice-start: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%); /* Cyan to teal */
+  
+  /* Course Management Gradients */
+  --gradient-course-header: linear-gradient(135deg, #10b981 0%, #059669 50%, #047857 100%); /* Green gradient */
+  --gradient-course-create: linear-gradient(135deg, #34d399 0%, #10b981 100%); /* Light green to green */
+  
+  /* Profile Gradients */
+  --gradient-profile-header: linear-gradient(135deg, #f472b6 0%, #ec4899 50%, #db2777 100%); /* Pink gradient */
+  --gradient-profile-card: linear-gradient(135deg, #fce7f3 0%, #fbcfe8 100%); /* Light pink gradient */
+  
+  /* Button Gradients */
+  --gradient-button-primary: linear-gradient(135deg, #7c3aed 0%, #6366f1 100%);
+  --gradient-button-secondary: linear-gradient(135deg, #64748b 0%, #475569 100%);
+  --gradient-button-success: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  --gradient-button-danger: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  --gradient-button-warning: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  
+  /* Card Gradients */
+  --gradient-card-primary: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  --gradient-card-dark: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+  --gradient-card-accent: linear-gradient(135deg, #ddd6fe 0%, #c4b5fd 100%);
+  
+  /* Progress Indicators */
+  --gradient-progress-primary: linear-gradient(90deg, #7c3aed 0%, #6366f1 100%);
+  --gradient-progress-success: linear-gradient(90deg, #10b981 0%, #34d399 100%);
+  --gradient-progress-warning: linear-gradient(90deg, #f59e0b 0%, #fbbf24 100%);
+  
+  /* Hover Effects */
+  --gradient-hover-primary: linear-gradient(135deg, #6d28d9 0%, #5b21b6 100%);
+  --gradient-hover-secondary: linear-gradient(135deg, #0f766e 0%, #0d9488 100%);
+  --gradient-hover-success: linear-gradient(135deg, #047857 0%, #059669 100%);
+}
+
+/* Dark theme gradient overrides */
+.dark {
+  --gradient-card-primary: linear-gradient(135deg, #334155 0%, #1e293b 100%);
+  --gradient-card-dark: linear-gradient(135deg, #0f172a 0%, #020617 100%);
+}
+
+/* Gradient utility classes */
+@layer utilities {
+  /* Authentication gradients */
+  .bg-gradient-login {
+    background: var(--gradient-login-primary);
+  }
+  
+  .bg-gradient-signup {
+    background: var(--gradient-signup-primary);
+  }
+  
+  /* Dashboard gradients */
+  .bg-gradient-dashboard {
+    background: var(--gradient-dashboard-header);
+  }
+  
+  .bg-gradient-welcome {
+    background: var(--gradient-dashboard-welcome);
+  }
+  
+  /* Practice gradients */
+  .bg-gradient-practice {
+    background: var(--gradient-practice-header);
+  }
+  
+  .bg-gradient-practice-start {
+    background: var(--gradient-practice-start);
+  }
+  
+  /* Course gradients */
+  .bg-gradient-course {
+    background: var(--gradient-course-header);
+  }
+  
+  .bg-gradient-course-create {
+    background: var(--gradient-course-create);
+  }
+  
+  /* Profile gradients */
+  .bg-gradient-profile {
+    background: var(--gradient-profile-header);
+  }
+  
+  .bg-gradient-profile-card {
+    background: var(--gradient-profile-card);
+  }
+  
+  /* Button gradients */
+  .bg-gradient-btn-primary {
+    background: var(--gradient-button-primary);
+  }
+  
+  .bg-gradient-btn-secondary {
+    background: var(--gradient-button-secondary);
+  }
+  
+  .bg-gradient-btn-success {
+    background: var(--gradient-button-success);
+  }
+  
+  .bg-gradient-btn-danger {
+    background: var(--gradient-button-danger);
+  }
+  
+  .bg-gradient-btn-warning {
+    background: var(--gradient-button-warning);
+  }
+  
+  /* Card gradients */
+  .bg-gradient-card {
+    background: var(--gradient-card-primary);
+  }
+  
+  .bg-gradient-card-dark {
+    background: var(--gradient-card-dark);
+  }
+  
+  .bg-gradient-card-accent {
+    background: var(--gradient-card-accent);
+  }
+  
+  /* Progress gradients */
+  .bg-gradient-progress {
+    background: var(--gradient-progress-primary);
+  }
+  
+  .bg-gradient-progress-success {
+    background: var(--gradient-progress-success);
+  }
+  
+  .bg-gradient-progress-warning {
+    background: var(--gradient-progress-warning);
+  }
+  
+  /* Hover states */
+  .hover\:bg-gradient-primary:hover {
+    background: var(--gradient-hover-primary);
+  }
+  
+  .hover\:bg-gradient-secondary:hover {
+    background: var(--gradient-hover-secondary);
+  }
+  
+  .hover\:bg-gradient-success:hover {
+    background: var(--gradient-hover-success);
+  }
+  
+  /* Gradient text */
+  .text-gradient-primary {
+    background: var(--gradient-login-primary);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  
+  .text-gradient-teal {
+    background: var(--gradient-signup-primary);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  
+  /* Gradient borders */
+  .border-gradient-primary {
+    border: 2px solid transparent;
+    background: linear-gradient(white, white), var(--gradient-login-primary);
+    background-clip: padding-box, border-box;
+  }
+  
+  .border-gradient-teal {
+    border: 2px solid transparent;
+    background: linear-gradient(white, white), var(--gradient-signup-primary);
+    background-clip: padding-box, border-box;
+  }
+}
+
+/* Animation support for gradients */
+@layer components {
+  .gradient-animate {
+    background-size: 200% 200%;
+    animation: gradientShift 3s ease-in-out infinite alternate;
+  }
+  
+  @keyframes gradientShift {
+    0% {
+      background-position: 0% 50%;
+    }
+    100% {
+      background-position: 100% 50%;
+    }
+  }
+  
+  /* Smooth transitions for gradient changes */
+  .gradient-transition {
+    transition: all 0.3s ease-in-out;
+  }
+  
+  .gradient-transition:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+  }
+}
